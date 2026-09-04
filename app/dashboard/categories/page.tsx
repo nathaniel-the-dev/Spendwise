@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import { CategoryIcon } from "@/components/category-icon";
 import {
   useCategories,
   useCreateCategory,
@@ -24,15 +25,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
-const iconMap: Record<string, string> = {
-  circle: "○", "shopping-cart": "🛒", utensils: "🍽", car: "🚗", home: "🏠",
-  "gamepad-2": "🎮", shirt: "👕", "heart-pulse": "❤", "graduation-cap": "🎓",
-  plane: "✈", smartphone: "📱", tv: "📺", dumbbell: "💪", "book-open": "📖",
-  music: "🎵", dog: "🐕", gift: "🎁", coins: "💰", "piggy-bank": "🐷",
-  "credit-card": "💳", "building-2": "🏢", wifi: "📶", droplets: "💧",
-  zap: "⚡", fire: "🔥",
-};
 
 export default function CategoriesPage() {
   const { data: categories, isLoading } = useCategories();
@@ -64,8 +56,8 @@ export default function CategoriesPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Categories</h1>
-          <p className="text-sm md:text-base text-muted-foreground">
+          <h1 className="text-xl md:text-2xl font-semibold tracking-tight">Categories</h1>
+          <p className="text-sm text-muted-foreground">
             Organize your transactions with categories.
           </p>
         </div>
@@ -94,7 +86,9 @@ export default function CategoriesPage() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-lg">{iconMap[cat.icon] || "○"}</span>
+                    <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                      <CategoryIcon icon={cat.icon} className="h-5 w-5 text-foreground" />
+                    </span>
                     <CardTitle className="text-base">{cat.name}</CardTitle>
                   </div>
                   <Badge variant={cat.type === "income" ? "success" : "default"}>
@@ -109,16 +103,16 @@ export default function CategoriesPage() {
                   </div>
                   <div className="flex gap-1">
                     <Button
-                      variant="ghost" size="icon" className="h-8 w-8"
+                      variant="ghost" size="icon" className="h-8 w-8 rounded-lg" aria-label={`Edit ${cat.name} category`}
                       onClick={() => { setEditing(cat); setDialogOpen(true); }}
                     >
-                      <Pencil className="h-3.5 w-3.5" />
+                      <Pencil className="h-4 w-4" />
                     </Button>
                     <Button
-                      variant="ghost" size="icon" className="h-8 w-8 text-destructive"
+                      variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-destructive" aria-label={`Delete ${cat.name} category`}
                       onClick={() => setDeleting(cat.id)}
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>

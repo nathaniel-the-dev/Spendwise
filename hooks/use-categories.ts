@@ -17,10 +17,33 @@ export type CategoryInput = {
   type?: "expense" | "income";
 };
 
+type RawCategory = {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+  type: "expense" | "income";
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+};
+
+function mapCategory(raw: RawCategory): Category {
+  return {
+    id: raw.id,
+    name: raw.name,
+    icon: raw.icon,
+    color: raw.color,
+    type: raw.type,
+    userId: raw.user_id,
+  };
+}
+
 async function fetchCategories(): Promise<Category[]> {
   const res = await fetch("/api/categories");
   if (!res.ok) throw new Error("Failed to fetch categories");
-  return res.json();
+  const data: RawCategory[] = await res.json();
+  return data.map(mapCategory);
 }
 
 async function createCategory(data: CategoryInput): Promise<Category> {
@@ -33,7 +56,7 @@ async function createCategory(data: CategoryInput): Promise<Category> {
     const err = await res.json();
     throw new Error(err.error || "Failed to create category");
   }
-  return res.json();
+  return mapCategory(await res.json());
 }
 
 async function updateCategory(id: string, data: Partial<CategoryInput>): Promise<Category> {
@@ -46,7 +69,7 @@ async function updateCategory(id: string, data: Partial<CategoryInput>): Promise
     const err = await res.json();
     throw new Error(err.error || "Failed to update category");
   }
-  return res.json();
+  return mapCategory(await res.json());
 }
 
 async function deleteCategory(id: string): Promise<void> {
@@ -61,6 +84,7 @@ export function useCategories() {
   return useQuery({
     queryKey: ["categories"],
     queryFn: fetchCategories,
+    staleTime: 60_000,
   });
 }
 

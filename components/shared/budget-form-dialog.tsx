@@ -81,12 +81,12 @@ export function BudgetFormDialog({
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label>Category</Label>
+            <Label htmlFor="budget-category">Category</Label>
             <Select
               value={form.watch("categoryId")}
               onValueChange={(v) => form.setValue("categoryId", v)}
             >
-              <SelectTrigger>
+              <SelectTrigger id="budget-category">
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
               <SelectContent>
@@ -109,12 +109,12 @@ export function BudgetFormDialog({
               )}
             </div>
             <div className="space-y-2">
-              <Label>Period</Label>
+              <Label htmlFor="budget-period">Period</Label>
               <Select
                 value={form.watch("period")}
                 onValueChange={(v) => form.setValue("period", v as "weekly" | "monthly" | "yearly")}
               >
-                <SelectTrigger>
+                <SelectTrigger id="budget-period">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

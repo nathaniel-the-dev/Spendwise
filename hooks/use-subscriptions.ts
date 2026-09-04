@@ -40,10 +40,57 @@ export type SubscriptionInput = {
   notes?: string | null;
 };
 
+type RawSubscription = {
+  id: string;
+  user_id: string;
+  name: string;
+  provider: string | null;
+  description: string | null;
+  amount: number;
+  currency: string;
+  amount_in_preferred: number | null;
+  billing_cycle: "weekly" | "monthly" | "quarterly" | "yearly" | "custom";
+  billing_interval: number | null;
+  category_id: string | null;
+  start_date: string;
+  next_billing_date: string;
+  end_date: string | null;
+  status: "active" | "paused" | "cancelled";
+  logo: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  category?: { id: string; name: string; color: string; icon: string } | null;
+};
+
+function mapSubscription(raw: RawSubscription): Subscription {
+  return {
+    id: raw.id,
+    userId: raw.user_id,
+    name: raw.name,
+    provider: raw.provider,
+    description: raw.description,
+    amount: raw.amount,
+    currency: raw.currency,
+    amountInPreferred: raw.amount_in_preferred,
+    billingCycle: raw.billing_cycle,
+    billingInterval: raw.billing_interval ?? 1,
+    categoryId: raw.category_id,
+    startDate: raw.start_date,
+    nextBillingDate: raw.next_billing_date,
+    endDate: raw.end_date,
+    status: raw.status,
+    logo: raw.logo,
+    notes: raw.notes,
+    category: raw.category ?? null,
+  };
+}
+
 async function fetchSubscriptions(): Promise<Subscription[]> {
   const res = await fetch("/api/subscriptions");
   if (!res.ok) throw new Error("Failed to fetch subscriptions");
-  return res.json();
+  const data: RawSubscription[] = await res.json();
+  return data.map(mapSubscription);
 }
 
 async function createSubscription(data: SubscriptionInput): Promise<Subscription> {
@@ -56,7 +103,7 @@ async function createSubscription(data: SubscriptionInput): Promise<Subscription
     const err = await res.json();
     throw new Error(err.error || "Failed to create subscription");
   }
-  return res.json();
+  return mapSubscription(await res.json());
 }
 
 async function updateSubscription(id: string, data: Partial<SubscriptionInput>): Promise<Subscription> {
@@ -69,7 +116,7 @@ async function updateSubscription(id: string, data: Partial<SubscriptionInput>):
     const err = await res.json();
     throw new Error(err.error || "Failed to update subscription");
   }
-  return res.json();
+  return mapSubscription(await res.json());
 }
 
 async function deleteSubscription(id: string): Promise<void> {
@@ -81,7 +128,7 @@ async function deleteSubscription(id: string): Promise<void> {
 }
 
 export function useSubscriptions() {
-  return useQuery({ queryKey: ["subscriptions"], queryFn: fetchSubscriptions });
+  return useQuery({ queryKey: ["subscriptions"], queryFn: fetchSubscriptions, staleTime: 30_000 });
 }
 
 export function useCreateSubscription() {

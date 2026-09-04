@@ -14,7 +14,7 @@ export async function getAuthContext(): Promise<AuthContext> {
 }
 
 export function handleError(error: unknown) {
-  console.error(error);
+  console.error("API error:", error instanceof Error ? error.message : error);
   if (error instanceof Error && error.message === "Unauthorized") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

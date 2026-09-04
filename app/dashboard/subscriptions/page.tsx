@@ -80,18 +80,18 @@ export default function SubscriptionsPage() {
 
   const categoryMap = new Map(categories?.map((c) => [c.id, c]));
 
-  const statusVariant: Record<string, "default" | "secondary" | "outline"> = {
-    active: "default",
-    paused: "secondary",
-    cancelled: "outline",
+  const statusVariant: Record<string, "success" | "warning" | "secondary"> = {
+    active: "success",
+    paused: "warning",
+    cancelled: "secondary",
   };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Subscriptions</h1>
-          <p className="text-sm md:text-base text-muted-foreground">
+          <h1 className="text-xl md:text-2xl font-semibold tracking-tight">Subscriptions</h1>
+          <p className="text-sm text-muted-foreground">
             Track and manage your recurring subscriptions.
           </p>
         </div>
@@ -125,31 +125,36 @@ export default function SubscriptionsPage() {
               <Card key={sub.id}>
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-base">{sub.name}</CardTitle>
-                      {sub.provider && (
-                        <p className="text-xs text-muted-foreground">{sub.provider}</p>
-                      )}
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-sm font-semibold uppercase text-muted-foreground flex-shrink-0">
+                        {sub.name.charAt(0)}
+                      </span>
+                      <div className="min-w-0">
+                        <CardTitle className="text-base truncate">{sub.name}</CardTitle>
+                        {sub.provider && (
+                          <p className="text-xs text-muted-foreground">{sub.provider}</p>
+                        )}
+                      </div>
                     </div>
                     <div className="flex gap-1">
                       <Button
-                        variant="ghost" size="icon" className="h-7 w-7"
+                        variant="ghost" size="icon" className="h-8 w-8 rounded-lg" aria-label={`Edit ${sub.name} subscription`}
                         onClick={() => { setEditing(sub); setDialogOpen(true); }}
                       >
-                        <Pencil className="h-3.5 w-3.5" />
+                        <Pencil className="h-4 w-4" />
                       </Button>
                       <Button
-                        variant="ghost" size="icon" className="h-7 w-7 text-destructive"
+                        variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-destructive" aria-label={`Delete ${sub.name} subscription`}
                         onClick={() => setDeleting(sub.id)}
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div>
-                    <p className="text-2xl font-bold">{formatCurrency(sub.amount, sub.currency)}</p>
+                    <p className="text-2xl font-bold tabular-nums">{formatCurrency(sub.amount, sub.currency)}</p>
                     <p className="text-xs text-muted-foreground capitalize">
                       {sub.billingCycle === "custom"
                         ? `Every ${sub.billingInterval} days`
@@ -157,22 +162,22 @@ export default function SubscriptionsPage() {
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-semibold tabular-nums text-muted-foreground">
                       ~{formatCurrency(monthlyAmount)}/mo &middot; ~{formatCurrency(yearlyAmount)}/yr
                     </span>
-                    <Badge variant={statusVariant[sub.status] || "outline"}>
+                    <Badge variant={statusVariant[sub.status] || "secondary"}>
                       {sub.status}
                     </Badge>
                   </div>
 
                   <div className="flex items-center gap-2 pt-1">
-                    <Calendar className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                    <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                     <span className="text-xs text-muted-foreground">
                       Next: {formatDate(nextDate)}
                     </span>
                     {isUpcoming && sub.status === "active" && (
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
+                      <Badge variant="outline">
                         Soon
                       </Badge>
                     )}

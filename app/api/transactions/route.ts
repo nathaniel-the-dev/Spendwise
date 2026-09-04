@@ -1,13 +1,11 @@
-import { db } from "@/lib/db";
-import { transactions } from "@/lib/db/schema";
+import { createClient } from "@/lib/supabase/server";
 import { getAuthContext, handleError } from "@/lib/api-utils";
 import { NextResponse } from "next/server";
-import { eq, and, desc, gte, lte, like, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { generateId } from "@/lib/utils";
 
 const createSchema = z.object({
-  amount: z.number(),
+  amount: z.number().finite().positive(),
   currency: z.string().length(3).optional(),
   amountInPreferred: z.number().optional(),
   description: z.string().min(1),
@@ -21,6 +19,7 @@ const createSchema = z.object({
 export async function GET(request: Request) {
   try {
     const { userId } = await getAuthContext();
+    const supabase = await createClient();
     const url = new URL(request.url);
     const search = url.searchParams.get("search");
     const categoryId = url.searchParams.get("categoryId");
@@ -30,42 +29,42 @@ export async function GET(request: Request) {
     const limit = parseInt(url.searchParams.get("limit") ?? "50");
     const offset = parseInt(url.searchParams.get("offset") ?? "0");
 
-    const conditions: import("drizzle-orm").SQL[] = [eq(transactions.userId, userId)];
+    let query = supabase
+      .from("transaction")
+      .select("*, category(*)")
+      .eq("user_id", userId)
+      .order("date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit - 1);
 
     if (search) {
-      conditions.push(
-        or(
-          like(transactions.description, `%${search}%`),
-          like(transactions.notes ?? "", `%${search}%`)
-        )!
-      );
+      query = query.or(`description.ilike.%${search}%,notes.ilike.%${search}%`);
     }
 
     if (categoryId) {
-      conditions.push(eq(transactions.categoryId, categoryId));
+      query = query.eq("category_id", categoryId);
     }
 
     if (type) {
-      conditions.push(eq(transactions.type, type as "expense" | "income"));
+      query = query.eq("type", type);
     }
 
     if (startDate) {
-      conditions.push(gte(transactions.date, new Date(startDate)));
+      query = query.gte("date", startDate);
     }
 
     if (endDate) {
-      conditions.push(lte(transactions.date, new Date(endDate)));
+      query = query.lte("date", endDate);
     }
 
-    const results = await db.query.transactions.findMany({
-      where: and(...conditions),
-      orderBy: [desc(transactions.date), desc(transactions.createdAt)],
-      limit,
-      offset,
-      with: { category: true },
-    });
+    const { data, error: queryError } = await query;
 
-    return NextResponse.json(results);
+    if (queryError) {
+      console.error("Supabase query error:", queryError);
+      return NextResponse.json({ error: "Failed to fetch transactions" }, { status: 500 });
+    }
+
+    return NextResponse.json(data ?? []);
   } catch (error) {
     return handleError(error);
   }
@@ -74,6 +73,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const { userId } = await getAuthContext();
+    const supabase = await createClient();
     const body = await request.json();
     const parsed = createSchema.safeParse(body);
 
@@ -87,26 +87,30 @@ export async function POST(request: Request) {
     const { amount, currency, amountInPreferred, description, date, type, categoryId, tags, notes } = parsed.data;
     const id = generateId();
 
-    await db.insert(transactions).values({
-      id,
-      amount,
-      currency: currency ?? "USD",
-      amountInPreferred: amountInPreferred ?? null,
-      description,
-      date: new Date(date),
-      type: type ?? "expense",
-      categoryId: categoryId ?? null,
-      tags: tags ?? null,
-      notes: notes ?? null,
-      userId,
-    });
+    const { data, error: insertError } = await supabase
+      .from("transaction")
+      .insert({
+        id,
+        amount,
+        currency: currency ?? "USD",
+        amount_in_preferred: amountInPreferred ?? null,
+        description,
+        date,
+        type: type ?? "expense",
+        category_id: categoryId ?? null,
+        tags: tags ?? null,
+        notes: notes ?? null,
+        user_id: userId,
+      })
+      .select("*, category(*)")
+      .single();
 
-    const transaction = await db.query.transactions.findFirst({
-      where: eq(transactions.id, id),
-      with: { category: true },
-    });
+    if (insertError) {
+      console.error("Supabase insert error:", insertError);
+      return NextResponse.json({ error: "Failed to create transaction" }, { status: 500 });
+    }
 
-    return NextResponse.json(transaction, { status: 201 });
+    return NextResponse.json(data, { status: 201 });
   } catch (error) {
     return handleError(error);
   }

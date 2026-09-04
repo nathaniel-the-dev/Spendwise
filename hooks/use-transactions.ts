@@ -38,6 +38,40 @@ export type TransactionFilters = {
   offset?: number;
 };
 
+type RawTransaction = {
+  id: string;
+  amount: number;
+  currency: string;
+  amount_in_preferred: number | null;
+  description: string;
+  date: string;
+  type: "expense" | "income";
+  category_id: string | null;
+  user_id: string;
+  tags: string[] | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  category?: { id: string; name: string; color: string; icon: string } | null;
+};
+
+function mapTransaction(raw: RawTransaction): Transaction {
+  return {
+    id: raw.id,
+    amount: raw.amount,
+    currency: raw.currency,
+    amountInPreferred: raw.amount_in_preferred,
+    description: raw.description,
+    date: raw.date,
+    type: raw.type,
+    categoryId: raw.category_id,
+    userId: raw.user_id,
+    tags: raw.tags,
+    notes: raw.notes,
+    category: raw.category ?? null,
+  };
+}
+
 async function fetchTransactions(filters?: TransactionFilters): Promise<Transaction[]> {
   const params = new URLSearchParams();
   if (filters?.search) params.set("search", filters.search);
@@ -50,7 +84,8 @@ async function fetchTransactions(filters?: TransactionFilters): Promise<Transact
   const qs = params.toString();
   const res = await fetch(`/api/transactions${qs ? `?${qs}` : ""}`);
   if (!res.ok) throw new Error("Failed to fetch transactions");
-  return res.json();
+  const data: RawTransaction[] = await res.json();
+  return data.map(mapTransaction);
 }
 
 async function createTransaction(data: TransactionInput): Promise<Transaction> {
@@ -63,7 +98,7 @@ async function createTransaction(data: TransactionInput): Promise<Transaction> {
     const err = await res.json();
     throw new Error(err.error || "Failed to create transaction");
   }
-  return res.json();
+  return mapTransaction(await res.json());
 }
 
 async function updateTransaction(id: string, data: Partial<TransactionInput>): Promise<Transaction> {
@@ -76,7 +111,7 @@ async function updateTransaction(id: string, data: Partial<TransactionInput>): P
     const err = await res.json();
     throw new Error(err.error || "Failed to update transaction");
   }
-  return res.json();
+  return mapTransaction(await res.json());
 }
 
 async function deleteTransaction(id: string): Promise<void> {
@@ -91,6 +126,7 @@ export function useTransactions(filters?: TransactionFilters) {
   return useQuery({
     queryKey: ["transactions", filters],
     queryFn: () => fetchTransactions(filters),
+    staleTime: 30_000,
   });
 }
 

@@ -1,14 +1,16 @@
-import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
 const schema = z.object({
-  id: z.string(),
-  name: z.string().min(2),
-  email: z.string().email(),
-  hashedPassword: z.string(),
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Please enter a valid email"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number"),
 });
 
 export async function POST(request: Request) {
@@ -17,17 +19,22 @@ export async function POST(request: Request) {
     const parsed = schema.safeParse(body);
 
     if (!parsed.success) {
+      const messages = parsed.error.issues.map((i) => i.message).join(", ");
       return NextResponse.json(
-        { error: "Invalid input" },
+        { error: messages },
         { status: 400 }
       );
     }
 
-    const { id, name, email, hashedPassword } = parsed.data;
+    const { name, email, password } = parsed.data;
 
-    const existing = await db.query.users.findFirst({
-      where: eq(users.email, email),
-    });
+    const supabase = await createClient();
+
+    const { data: existing } = await supabase
+      .from("user")
+      .select("id")
+      .eq("email", email)
+      .maybeSingle();
 
     if (existing) {
       return NextResponse.json(
@@ -36,11 +43,32 @@ export async function POST(request: Request) {
       );
     }
 
-    await db.insert(users).values({
-      id,
+    const { data: authData, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { name },
+      },
+    });
+
+    if (signUpError) {
+      return NextResponse.json(
+        { error: signUpError.message },
+        { status: 400 }
+      );
+    }
+
+    if (!authData.user) {
+      return NextResponse.json(
+        { error: "Failed to create account" },
+        { status: 500 }
+      );
+    }
+
+    await supabase.from("user").insert({
+      id: authData.user.id,
       name,
       email,
-      hashedPassword,
     });
 
     return NextResponse.json({ success: true }, { status: 201 });

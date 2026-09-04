@@ -35,5 +35,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-
+# local editor/workspace
 .vscode
+
+# local agent / tool data (not part of the app)
+.omo/
+.codegraph

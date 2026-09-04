@@ -1,15 +1,13 @@
-import { db } from "@/lib/db";
-import { subscriptions } from "@/lib/db/schema";
+import { createClient } from "@/lib/supabase/server";
 import { getAuthContext, handleError } from "@/lib/api-utils";
 import { NextResponse } from "next/server";
-import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 
 const updateSchema = z.object({
   name: z.string().min(1).optional(),
   provider: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
-  amount: z.number().optional(),
+  amount: z.number().finite().positive().optional(),
   currency: z.string().length(3).optional(),
   amountInPreferred: z.number().optional().nullable(),
   billingCycle: z.enum(["weekly", "monthly", "quarterly", "yearly", "custom"]).optional(),
@@ -23,18 +21,26 @@ const updateSchema = z.object({
   notes: z.string().optional().nullable(),
 });
 
+async function getSubscription(supabase: Awaited<ReturnType<typeof createClient>>, id: string, userId: string) {
+  const { data } = await supabase
+    .from("subscription")
+    .select("*, category(*)")
+    .eq("id", id)
+    .eq("user_id", userId)
+    .maybeSingle();
+  return data;
+}
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { userId } = await getAuthContext();
+    const supabase = await createClient();
     const { id } = await params;
 
-    const subscription = await db.query.subscriptions.findFirst({
-      where: and(eq(subscriptions.id, id), eq(subscriptions.userId, userId)),
-      with: { category: true },
-    });
+    const subscription = await getSubscription(supabase, id, userId);
 
     if (!subscription) {
       return NextResponse.json({ error: "Subscription not found" }, { status: 404 });
@@ -52,11 +58,10 @@ export async function PATCH(
 ) {
   try {
     const { userId } = await getAuthContext();
+    const supabase = await createClient();
     const { id } = await params;
 
-    const existing = await db.query.subscriptions.findFirst({
-      where: and(eq(subscriptions.id, id), eq(subscriptions.userId, userId)),
-    });
+    const existing = await getSubscription(supabase, id, userId);
 
     if (!existing) {
       return NextResponse.json({ error: "Subscription not found" }, { status: 404 });
@@ -72,21 +77,39 @@ export async function PATCH(
       );
     }
 
-    const updateData: Record<string, unknown> = { ...parsed.data, updatedAt: new Date() };
-    if (parsed.data.startDate) updateData.startDate = new Date(parsed.data.startDate);
-    if (parsed.data.nextBillingDate) updateData.nextBillingDate = new Date(parsed.data.nextBillingDate);
-    if (parsed.data.endDate !== undefined) {
-      updateData.endDate = parsed.data.endDate ? new Date(parsed.data.endDate) : null;
+    const updateData: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
+    };
+
+    if (parsed.data.name !== undefined) updateData.name = parsed.data.name;
+    if (parsed.data.provider !== undefined) updateData.provider = parsed.data.provider;
+    if (parsed.data.description !== undefined) updateData.description = parsed.data.description;
+    if (parsed.data.amount !== undefined) updateData.amount = parsed.data.amount;
+    if (parsed.data.currency !== undefined) updateData.currency = parsed.data.currency;
+    if (parsed.data.amountInPreferred !== undefined) updateData.amount_in_preferred = parsed.data.amountInPreferred;
+    if (parsed.data.billingCycle !== undefined) updateData.billing_cycle = parsed.data.billingCycle;
+    if (parsed.data.billingInterval !== undefined) updateData.billing_interval = parsed.data.billingInterval;
+    if (parsed.data.categoryId !== undefined) updateData.category_id = parsed.data.categoryId;
+    if (parsed.data.startDate !== undefined) updateData.start_date = parsed.data.startDate;
+    if (parsed.data.nextBillingDate !== undefined) updateData.next_billing_date = parsed.data.nextBillingDate;
+    if (parsed.data.endDate !== undefined) updateData.end_date = parsed.data.endDate;
+    if (parsed.data.status !== undefined) updateData.status = parsed.data.status;
+    if (parsed.data.logo !== undefined) updateData.logo = parsed.data.logo;
+    if (parsed.data.notes !== undefined) updateData.notes = parsed.data.notes;
+
+    const { data, error: updateError } = await supabase
+      .from("subscription")
+      .update(updateData)
+      .eq("id", id)
+      .select("*, category(*)")
+      .single();
+
+    if (updateError) {
+      console.error("Supabase update error:", updateError);
+      return NextResponse.json({ error: "Failed to update subscription" }, { status: 500 });
     }
 
-    await db.update(subscriptions).set(updateData).where(eq(subscriptions.id, id));
-
-    const updated = await db.query.subscriptions.findFirst({
-      where: eq(subscriptions.id, id),
-      with: { category: true },
-    });
-
-    return NextResponse.json(updated);
+    return NextResponse.json(data);
   } catch (error) {
     return handleError(error);
   }
@@ -98,17 +121,21 @@ export async function DELETE(
 ) {
   try {
     const { userId } = await getAuthContext();
+    const supabase = await createClient();
     const { id } = await params;
 
-    const existing = await db.query.subscriptions.findFirst({
-      where: and(eq(subscriptions.id, id), eq(subscriptions.userId, userId)),
-    });
+    const existing = await getSubscription(supabase, id, userId);
 
     if (!existing) {
       return NextResponse.json({ error: "Subscription not found" }, { status: 404 });
     }
 
-    await db.delete(subscriptions).where(eq(subscriptions.id, id));
+    const { error: deleteError } = await supabase.from("subscription").delete().eq("id", id);
+
+    if (deleteError) {
+      console.error("Supabase delete error:", deleteError);
+      return NextResponse.json({ error: "Failed to delete subscription" }, { status: 500 });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

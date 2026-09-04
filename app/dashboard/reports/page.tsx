@@ -10,15 +10,8 @@ import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from "recharts";
-
-const categoryEmoji: Record<string, string> = {
-  "shopping-cart": "🛒", utensils: "🍽", car: "🚗", home: "🏠",
-  "gamepad-2": "🎮", shirt: "👕", "heart-pulse": "❤", "graduation-cap": "🎓",
-  plane: "✈", smartphone: "📱", tv: "📺", dumbbell: "💪", "book-open": "📖",
-  music: "🎵", dog: "🐕", gift: "🎁", coins: "💰", "piggy-bank": "🐷",
-  "credit-card": "💳", "building-2": "🏢", wifi: "📶", droplets: "💧",
-  zap: "⚡", fire: "🔥", circle: "○",
-};
+import { TrendingUp, TrendingDown, DollarSign, AlertTriangle, Lightbulb, Inbox, Circle } from "lucide-react";
+import { categoryIconMap } from "@/components/category-icon";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -43,8 +36,8 @@ export default function ReportsPage() {
       narrative: [],
     };
 
-    const expenses = transactions.filter((t) => t.amount < 0 || t.type === "expense");
-    const income = transactions.filter((t) => t.amount > 0 || t.type === "income");
+    const expenses = transactions.filter((t) => t.type === "expense");
+    const income = transactions.filter((t) => t.type === "income");
     const totalExp = expenses.reduce((s, t) => s + Math.abs(t.amount), 0);
     const totalInc = income.reduce((s, t) => s + t.amount, 0);
 
@@ -57,12 +50,17 @@ export default function ReportsPage() {
     }
 
     const catData = Array.from(byCategory.entries())
-      .map(([id, amount]) => ({
-        name: id === "uncategorized" ? "Uncategorized" : (catMap.get(id)?.name ?? "Unknown"),
-        icon: id !== "uncategorized" ? (catMap.get(id)?.icon ? categoryEmoji[catMap.get(id)!.icon] ?? "○" : "○") : "○",
-        color: id !== "uncategorized" ? (catMap.get(id)?.color ?? "#6b7280") : "#6b7280",
-        value: amount,
-      }))
+      .map(([id, amount]) => {
+        const ico = id !== "uncategorized" && catMap.get(id)?.icon
+          ? (categoryIconMap[catMap.get(id)!.icon] ?? Circle)
+          : Circle;
+        return {
+          name: id === "uncategorized" ? "Uncategorized" : (catMap.get(id)?.name ?? "Unknown"),
+          icon: ico,
+          color: id !== "uncategorized" ? (catMap.get(id)?.color ?? "#6b7280") : "#6b7280",
+          value: amount,
+        };
+      })
       .sort((a, b) => b.value - a.value);
 
     const topC = catData[0];
@@ -104,7 +102,7 @@ export default function ReportsPage() {
       if (totalInc > 0) {
         const rate = ((totalInc - totalExp) / totalInc) * 100;
         narr.push(rate >= 0
-          ? `You're saving ${rate.toFixed(0)}% of your income. Keep it up! 🎉`
+          ? `You're saving ${rate.toFixed(0)}% of your income. Keep it up!`
           : `You're spending ${Math.abs(rate).toFixed(0)}% more than you earn. Time to review.`);
       }
       if (largest) narr.push(`Your single largest expense was ${formatCurrency(Math.abs(largest.amount))} — "${largest.description}".`);
@@ -125,20 +123,27 @@ export default function ReportsPage() {
     };
   }, [transactions, categories]);
 
+  const insightCards = [
+    { label: "Total Spent", value: formatCurrency(totalExpenses), icon: DollarSign, color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-950/30" },
+    { label: "Average Daily", value: formatCurrency(avgDaily), icon: TrendingDown, color: "text-rose-500", bg: "bg-rose-50 dark:bg-rose-950/30" },
+    { label: "Top Category", value: topCategory, icon: TrendingUp, color: "text-violet-500", bg: "bg-violet-50 dark:bg-violet-950/30" },
+    { label: "Largest Expense", value: formatCurrency(largestExpense.amount), icon: AlertTriangle, color: "text-amber-500", bg: "bg-amber-50 dark:bg-amber-950/30" },
+  ];
+
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-5 animate-fade-in">
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Reports</h1>
-        <p className="text-sm md:text-base text-muted-foreground">
-          Understand your spending at a glance.
-        </p>
+        <h1 className="text-xl md:text-2xl font-semibold tracking-tight">Reports</h1>
+        <p className="text-sm text-muted-foreground">Understand your spending at a glance.</p>
       </div>
 
       {totalExpenses > 0 && (
-        <Card className="animate-fade-in-up stagger-1 bg-gradient-to-br from-primary/5 via-transparent to-transparent border-primary/10">
-          <CardContent className="py-5">
-            <div className="flex items-start gap-3">
-              <span className="text-xl mt-0.5">📊</span>
+        <Card className="animate-fade-in-up stagger-1 border-primary/20 border-l-2 border-l-primary bg-primary/[0.03] dark:bg-primary/[0.06]">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 flex-shrink-0 mt-0.5">
+                <Lightbulb className="h-4 w-4 text-primary" />
+              </div>
               <div className="space-y-1">
                 <p className="text-sm font-medium">Your Spending Report</p>
                 {narrative.map((line, i) => (
@@ -157,23 +162,18 @@ export default function ReportsPage() {
           <TabsTrigger value="trends">Trends</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-4 mt-6">
+        <TabsContent value="overview" className="space-y-4 mt-4">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { label: "Total Spent", value: formatCurrency(totalExpenses), emoji: "💸" },
-              { label: "Average Daily", value: formatCurrency(avgDaily), emoji: "📆" },
-              { label: "Top Category", value: topCategory, emoji: "🏆" },
-              { label: "Largest Expense", value: formatCurrency(largestExpense.amount), emoji: "⚠️" },
-            ].map((item, i) => (
+            {insightCards.map((item, i) => (
               <Card key={item.label} className={`animate-fade-in-up stagger-${i + 2}`}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <span>{item.emoji}</span>
-                    {item.label}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-lg md:text-2xl font-bold truncate">{item.value}</p>
+                <CardContent className="p-5">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${item.bg}`}>
+                      <item.icon className={`h-5 w-5 ${item.color}`} />
+                    </div>
+                  </div>
+                  <p className="text-sm font-medium text-muted-foreground mb-0.5">{item.label}</p>
+                  <p className="text-xl md:text-2xl font-bold tabular-nums tracking-tight truncate">{item.value}</p>
                 </CardContent>
               </Card>
             ))}
@@ -181,20 +181,20 @@ export default function ReportsPage() {
 
           <div className="grid gap-4 lg:grid-cols-2">
             <Card className="animate-fade-in-up stagger-4">
-              <CardHeader>
-                <CardTitle className="text-base">🏷️ Spending by Category</CardTitle>
+              <CardHeader className="px-5 py-4">
+                <CardTitle className="text-sm font-semibold">Spending by Category</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-5 pb-5">
                 {categoryData.length > 0 ? (
-                  <div className="h-72">
+                  <div className="h-60">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
                           data={categoryData}
                           cx="50%"
                           cy="50%"
-                          innerRadius={60}
-                          outerRadius={100}
+                          innerRadius={50}
+                          outerRadius={85}
                           paddingAngle={2}
                           dataKey="value"
                         >
@@ -205,28 +205,29 @@ export default function ReportsPage() {
                         <Tooltip
                           formatter={(value: number) => formatCurrency(value)}
                           contentStyle={{
-                            background: "var(--card)",
+                            background: "var(--popover)",
                             border: "1px solid var(--border)",
-                            borderRadius: "var(--radius)",
-                            fontSize: "13px",
+                            borderRadius: "calc(var(--radius) + 2px)",
+                            boxShadow: "0 12px 40px rgb(0 0 0 / 0.08), 0 4px 12px rgb(0 0 0 / 0.04)",
+                            fontSize: "12px",
                           }}
                         />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
                 ) : (
-                  <div className="h-72 flex items-center justify-center text-muted-foreground text-sm">
+                  <div className="h-60 flex items-center justify-center text-muted-foreground text-sm">
                     <div className="text-center">
-                      <p className="text-lg mb-1">📭</p>
+                      <Inbox className="mx-auto h-8 w-8 mb-1 text-muted-foreground" aria-hidden="true" />
                       <p>No data yet.</p>
                     </div>
                   </div>
                 )}
                 <div className="flex flex-wrap gap-2 mt-3">
                   {categoryData.slice(0, 6).map((cat) => (
-                    <div key={cat.name} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: cat.color }} />
-                      <span>{cat.icon} {cat.name}</span>
+                    <div key={cat.name} className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: cat.color }} />
+                      <span><cat.icon className="h-3 w-3" /> {cat.name}</span>
                     </div>
                   ))}
                 </div>
@@ -234,11 +235,11 @@ export default function ReportsPage() {
             </Card>
 
             <Card className="animate-fade-in-up stagger-5">
-              <CardHeader>
-                <CardTitle className="text-base">📈 Monthly Trend</CardTitle>
+              <CardHeader className="px-5 py-4">
+                <CardTitle className="text-sm font-semibold">Monthly Trend</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="h-72">
+              <CardContent className="px-5 pb-5">
+                <div className="h-60">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={monthlyData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
@@ -247,13 +248,14 @@ export default function ReportsPage() {
                       <Tooltip
                         formatter={(value: number) => formatCurrency(value)}
                         contentStyle={{
-                          background: "var(--card)",
+                          background: "var(--popover)",
                           border: "1px solid var(--border)",
-                          borderRadius: "var(--radius)",
-                          fontSize: "13px",
+                          borderRadius: "calc(var(--radius) + 2px)",
+                          boxShadow: "0 12px 40px rgb(0 0 0 / 0.08), 0 4px 12px rgb(0 0 0 / 0.04)",
+                          fontSize: "12px",
                         }}
                       />
-                      <Bar dataKey="value" radius={[4, 4, 0, 0]} fill="var(--primary)" />
+                      <Bar dataKey="value" radius={[3, 3, 0, 0]} fill="var(--primary)" />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -262,24 +264,24 @@ export default function ReportsPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="categories" className="mt-6 animate-fade-in">
+        <TabsContent value="categories" className="mt-4 animate-fade-in">
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base">🏷️ Category Breakdown</CardTitle>
+            <CardHeader className="px-5 py-4">
+              <CardTitle className="text-sm font-semibold">Category Breakdown</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-5 pb-5">
               {categoryData.length > 0 ? (
                 <div className="space-y-3">
                   {categoryData.map((cat, i) => (
                     <div key={cat.name} className="animate-fade-in-up" style={{ animationDelay: `${i * 0.03}s` }}>
                       <div className="flex items-center justify-between text-sm mb-1">
                         <div className="flex items-center gap-2">
-                          <span className="h-3 w-3 rounded-full" style={{ backgroundColor: cat.color }} />
-                          <span>{cat.icon} {cat.name}</span>
+                          <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: cat.color }} />
+                          <span><cat.icon className="h-3.5 w-3.5" /> {cat.name}</span>
                         </div>
                         <div className="text-right">
-                          <span className="font-medium">{formatCurrency(cat.value)}</span>
-                          <span className="text-muted-foreground text-xs ml-2">
+                          <span className="font-medium tabular-nums">{formatCurrency(cat.value)}</span>
+                          <span className="text-muted-foreground ml-1.5 text-xs tabular-nums">
                             {((cat.value / totalExpenses) * 100).toFixed(1)}%
                           </span>
                         </div>
@@ -297,8 +299,8 @@ export default function ReportsPage() {
                   ))}
                 </div>
               ) : (
-                <div className="py-16 text-center text-muted-foreground">
-                  <p className="text-lg mb-1">📭</p>
+                <div className="py-12 text-center text-muted-foreground">
+                  <Inbox className="mx-auto h-8 w-8 mb-1 text-muted-foreground" aria-hidden="true" />
                   <p className="text-sm">No categories with expenses yet.</p>
                 </div>
               )}
@@ -306,32 +308,33 @@ export default function ReportsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="trends" className="mt-6 animate-fade-in">
+        <TabsContent value="trends" className="mt-4 animate-fade-in">
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base">📈 Monthly Spending Trend</CardTitle>
+            <CardHeader className="px-5 py-4">
+              <CardTitle className="text-sm font-semibold">Monthly Spending Trend</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="h-80">
+            <CardContent className="px-5 pb-5">
+              <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={monthlyData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                    <XAxis dataKey="month" tick={{ fontSize: 13 }} stroke="var(--muted-foreground)" />
-                    <YAxis tick={{ fontSize: 13 }} stroke="var(--muted-foreground)" />
+                    <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="var(--muted-foreground)" />
+                    <YAxis tick={{ fontSize: 12 }} stroke="var(--muted-foreground)" />
                     <Tooltip
                       formatter={(value: number) => formatCurrency(value)}
                       contentStyle={{
-                        background: "var(--card)",
+                        background: "var(--popover)",
                         border: "1px solid var(--border)",
-                        borderRadius: "var(--radius)",
-                        fontSize: "13px",
+                        borderRadius: "calc(var(--radius) + 2px)",
+                        boxShadow: "0 12px 40px rgb(0 0 0 / 0.08), 0 4px 12px rgb(0 0 0 / 0.04)",
+                        fontSize: "12px",
                       }}
                     />
-                    <Bar dataKey="value" radius={[6, 6, 0, 0]} fill="var(--chart-1)" />
+                    <Bar dataKey="value" radius={[4, 4, 0, 0]} fill="var(--chart-1)" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-              <div className="mt-4 text-sm text-muted-foreground">
+              <div className="mt-3 text-sm text-muted-foreground">
                 {monthlyData.length > 1 && (() => {
                   const last = monthlyData[monthlyData.length - 1].value;
                   const prev = monthlyData[monthlyData.length - 2].value;
@@ -340,8 +343,8 @@ export default function ReportsPage() {
                   return (
                     <p>
                       {Number(diff) >= 0
-                        ? `📈 Spending increased by ${diff}% compared to last month.`
-                        : `📉 Spending decreased by ${Math.abs(Number(diff))}% compared to last month.`}
+                        ? `Spending increased by ${diff}% compared to last month.`
+                        : `Spending decreased by ${Math.abs(Number(diff))}% compared to last month.`}
                     </p>
                   );
                 })()}

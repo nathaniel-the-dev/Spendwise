@@ -117,12 +117,12 @@ export function SubscriptionFormDialog({
               )}
             </div>
             <div className="space-y-2">
-              <Label>Currency</Label>
+              <Label htmlFor="subscription-currency">Currency</Label>
               <Select
                 value={form.watch("currency") || "USD"}
                 onValueChange={(v) => form.setValue("currency", v)}
               >
-                <SelectTrigger>
+                <SelectTrigger id="subscription-currency">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -136,12 +136,12 @@ export function SubscriptionFormDialog({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Billing Cycle</Label>
+              <Label htmlFor="subscription-billing-cycle">Billing Cycle</Label>
               <Select
                 value={form.watch("billingCycle")}
                 onValueChange={(v) => form.setValue("billingCycle", v as "weekly" | "monthly" | "quarterly" | "yearly" | "custom")}
               >
-                <SelectTrigger>
+                <SelectTrigger id="subscription-billing-cycle">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -160,16 +160,16 @@ export function SubscriptionFormDialog({
               </div>
             )}
             <div className="space-y-2">
-              <Label>Category</Label>
+              <Label htmlFor="subscription-category">Category</Label>
               <Select
-                value={form.watch("categoryId")}
-                onValueChange={(v) => form.setValue("categoryId", v)}
+                value={form.watch("categoryId") || "none"}
+                onValueChange={(v) => form.setValue("categoryId", v === "none" ? "" : v)}
               >
-                <SelectTrigger>
+                <SelectTrigger id="subscription-category">
                   <SelectValue placeholder="No category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No category</SelectItem>
+                  <SelectItem value="none">No category</SelectItem>
                   {expenseCategories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                   ))}

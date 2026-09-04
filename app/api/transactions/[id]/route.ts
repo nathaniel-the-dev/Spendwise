@@ -1,12 +1,10 @@
-import { db } from "@/lib/db";
-import { transactions } from "@/lib/db/schema";
+import { createClient } from "@/lib/supabase/server";
 import { getAuthContext, handleError } from "@/lib/api-utils";
 import { NextResponse } from "next/server";
-import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 
 const updateSchema = z.object({
-  amount: z.number().optional(),
+  amount: z.number().finite().positive().optional(),
   currency: z.string().length(3).optional(),
   amountInPreferred: z.number().optional().nullable(),
   description: z.string().min(1).optional(),
@@ -17,18 +15,26 @@ const updateSchema = z.object({
   notes: z.string().optional().nullable(),
 });
 
+async function getTransaction(supabase: Awaited<ReturnType<typeof createClient>>, id: string, userId: string) {
+  const { data } = await supabase
+    .from("transaction")
+    .select("*, category(*)")
+    .eq("id", id)
+    .eq("user_id", userId)
+    .maybeSingle();
+  return data;
+}
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { userId } = await getAuthContext();
+    const supabase = await createClient();
     const { id } = await params;
 
-    const transaction = await db.query.transactions.findFirst({
-      where: and(eq(transactions.id, id), eq(transactions.userId, userId)),
-      with: { category: true },
-    });
+    const transaction = await getTransaction(supabase, id, userId);
 
     if (!transaction) {
       return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
@@ -46,11 +52,10 @@ export async function PATCH(
 ) {
   try {
     const { userId } = await getAuthContext();
+    const supabase = await createClient();
     const { id } = await params;
 
-    const existing = await db.query.transactions.findFirst({
-      where: and(eq(transactions.id, id), eq(transactions.userId, userId)),
-    });
+    const existing = await getTransaction(supabase, id, userId);
 
     if (!existing) {
       return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
@@ -66,19 +71,33 @@ export async function PATCH(
       );
     }
 
-    const updateData: Record<string, unknown> = { ...parsed.data, updatedAt: new Date() };
-    if (parsed.data.date) {
-      updateData.date = new Date(parsed.data.date);
+    const updateData: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
+    };
+
+    if (parsed.data.amount !== undefined) updateData.amount = parsed.data.amount;
+    if (parsed.data.currency !== undefined) updateData.currency = parsed.data.currency;
+    if (parsed.data.amountInPreferred !== undefined) updateData.amount_in_preferred = parsed.data.amountInPreferred;
+    if (parsed.data.description !== undefined) updateData.description = parsed.data.description;
+    if (parsed.data.date !== undefined) updateData.date = parsed.data.date;
+    if (parsed.data.type !== undefined) updateData.type = parsed.data.type;
+    if (parsed.data.categoryId !== undefined) updateData.category_id = parsed.data.categoryId;
+    if (parsed.data.tags !== undefined) updateData.tags = parsed.data.tags;
+    if (parsed.data.notes !== undefined) updateData.notes = parsed.data.notes;
+
+    const { data, error: updateError } = await supabase
+      .from("transaction")
+      .update(updateData)
+      .eq("id", id)
+      .select("*, category(*)")
+      .single();
+
+    if (updateError) {
+      console.error("Supabase update error:", updateError);
+      return NextResponse.json({ error: "Failed to update transaction" }, { status: 500 });
     }
 
-    await db.update(transactions).set(updateData).where(eq(transactions.id, id));
-
-    const updated = await db.query.transactions.findFirst({
-      where: eq(transactions.id, id),
-      with: { category: true },
-    });
-
-    return NextResponse.json(updated);
+    return NextResponse.json(data);
   } catch (error) {
     return handleError(error);
   }
@@ -90,17 +109,21 @@ export async function DELETE(
 ) {
   try {
     const { userId } = await getAuthContext();
+    const supabase = await createClient();
     const { id } = await params;
 
-    const existing = await db.query.transactions.findFirst({
-      where: and(eq(transactions.id, id), eq(transactions.userId, userId)),
-    });
+    const existing = await getTransaction(supabase, id, userId);
 
     if (!existing) {
       return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
     }
 
-    await db.delete(transactions).where(eq(transactions.id, id));
+    const { error: deleteError } = await supabase.from("transaction").delete().eq("id", id);
+
+    if (deleteError) {
+      console.error("Supabase delete error:", deleteError);
+      return NextResponse.json({ error: "Failed to delete transaction" }, { status: 500 });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

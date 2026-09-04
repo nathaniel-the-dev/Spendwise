@@ -1,8 +1,6 @@
-import { db } from "@/lib/db";
-import { subscriptions } from "@/lib/db/schema";
+import { createClient } from "@/lib/supabase/server";
 import { getAuthContext, handleError } from "@/lib/api-utils";
 import { NextResponse } from "next/server";
-import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 import { generateId } from "@/lib/utils";
 
@@ -10,7 +8,7 @@ const createSchema = z.object({
   name: z.string().min(1),
   provider: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
-  amount: z.number(),
+  amount: z.number().finite().positive(),
   currency: z.string().length(3).optional(),
   amountInPreferred: z.number().optional().nullable(),
   billingCycle: z.enum(["weekly", "monthly", "quarterly", "yearly", "custom"]),
@@ -27,12 +25,15 @@ const createSchema = z.object({
 export async function GET() {
   try {
     const { userId } = await getAuthContext();
-    const userSubscriptions = await db.query.subscriptions.findMany({
-      where: eq(subscriptions.userId, userId),
-      orderBy: (subs, { asc }) => [asc(subs.nextBillingDate)],
-      with: { category: true },
-    });
-    return NextResponse.json(userSubscriptions);
+    const supabase = await createClient();
+
+    const { data, error: insertError } = await supabase
+      .from("subscription")
+      .select("*, category(*)")
+      .eq("user_id", userId)
+      .order("next_billing_date");
+
+    return NextResponse.json(data ?? []);
   } catch (error) {
     return handleError(error);
   }
@@ -41,6 +42,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const { userId } = await getAuthContext();
+    const supabase = await createClient();
     const body = await request.json();
     const parsed = createSchema.safeParse(body);
 
@@ -59,23 +61,36 @@ export async function POST(request: Request) {
 
     const id = generateId();
 
-    await db.insert(subscriptions).values({
-      id, name, provider: provider ?? null, description: description ?? null,
-      amount, currency: currency ?? "USD", amountInPreferred: amountInPreferred ?? null,
-      billingCycle, billingInterval: billingInterval ?? 1,
-      categoryId: categoryId ?? null,
-      startDate: new Date(startDate), nextBillingDate: new Date(nextBillingDate),
-      endDate: endDate ? new Date(endDate) : null,
-      status: status ?? "active", logo: logo ?? null, notes: notes ?? null,
-      userId,
-    });
+    const { data, error: insertError } = await supabase
+      .from("subscription")
+      .insert({
+        id,
+        name,
+        provider: provider ?? null,
+        description: description ?? null,
+        amount,
+        currency: currency ?? "USD",
+        amount_in_preferred: amountInPreferred ?? null,
+        billing_cycle: billingCycle,
+        billing_interval: billingInterval ?? 1,
+        category_id: categoryId ?? null,
+        start_date: startDate,
+        next_billing_date: nextBillingDate,
+        end_date: endDate ?? null,
+        status: status ?? "active",
+        logo: logo ?? null,
+        notes: notes ?? null,
+        user_id: userId,
+      })
+      .select("*, category(*)")
+      .single();
 
-    const subscription = await db.query.subscriptions.findFirst({
-      where: eq(subscriptions.id, id),
-      with: { category: true },
-    });
+    if (insertError) {
+      console.error("Supabase insert error:", insertError);
+      return NextResponse.json({ error: "Failed to create subscription" }, { status: 500 });
+    }
 
-    return NextResponse.json(subscription, { status: 201 });
+    return NextResponse.json(data, { status: 201 });
   } catch (error) {
     return handleError(error);
   }

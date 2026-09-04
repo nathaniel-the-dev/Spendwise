@@ -1,18 +1,26 @@
-import { db } from "@/lib/db";
-import { budgets } from "@/lib/db/schema";
+import { createClient } from "@/lib/supabase/server";
 import { getAuthContext, handleError } from "@/lib/api-utils";
 import { NextResponse } from "next/server";
-import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 
 const updateSchema = z.object({
   categoryId: z.string().optional().nullable(),
-  amount: z.number().optional(),
+  amount: z.number().finite().positive().optional(),
   currency: z.string().length(3).optional(),
   period: z.enum(["weekly", "monthly", "yearly"]).optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional().nullable(),
 });
+
+async function getBudget(supabase: Awaited<ReturnType<typeof createClient>>, id: string, userId: string) {
+  const { data } = await supabase
+    .from("budget")
+    .select("*, category(*)")
+    .eq("id", id)
+    .eq("user_id", userId)
+    .maybeSingle();
+  return data;
+}
 
 export async function GET(
   _request: Request,
@@ -20,12 +28,10 @@ export async function GET(
 ) {
   try {
     const { userId } = await getAuthContext();
+    const supabase = await createClient();
     const { id } = await params;
 
-    const budget = await db.query.budgets.findFirst({
-      where: and(eq(budgets.id, id), eq(budgets.userId, userId)),
-      with: { category: true },
-    });
+    const budget = await getBudget(supabase, id, userId);
 
     if (!budget) {
       return NextResponse.json({ error: "Budget not found" }, { status: 404 });
@@ -43,11 +49,10 @@ export async function PATCH(
 ) {
   try {
     const { userId } = await getAuthContext();
+    const supabase = await createClient();
     const { id } = await params;
 
-    const existing = await db.query.budgets.findFirst({
-      where: and(eq(budgets.id, id), eq(budgets.userId, userId)),
-    });
+    const existing = await getBudget(supabase, id, userId);
 
     if (!existing) {
       return NextResponse.json({ error: "Budget not found" }, { status: 404 });
@@ -63,20 +68,30 @@ export async function PATCH(
       );
     }
 
-    const updateData: Record<string, unknown> = { ...parsed.data, updatedAt: new Date() };
-    if (parsed.data.startDate) updateData.startDate = new Date(parsed.data.startDate);
-    if (parsed.data.endDate !== undefined) {
-      updateData.endDate = parsed.data.endDate ? new Date(parsed.data.endDate) : null;
+    const updateData: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
+    };
+
+    if (parsed.data.categoryId !== undefined) updateData.category_id = parsed.data.categoryId;
+    if (parsed.data.amount !== undefined) updateData.amount = parsed.data.amount;
+    if (parsed.data.currency !== undefined) updateData.currency = parsed.data.currency;
+    if (parsed.data.period !== undefined) updateData.period = parsed.data.period;
+    if (parsed.data.startDate !== undefined) updateData.start_date = parsed.data.startDate;
+    if (parsed.data.endDate !== undefined) updateData.end_date = parsed.data.endDate;
+
+    const { data, error: updateError } = await supabase
+      .from("budget")
+      .update(updateData)
+      .eq("id", id)
+      .select("*, category(*)")
+      .single();
+
+    if (updateError) {
+      console.error("Supabase update error:", updateError);
+      return NextResponse.json({ error: "Failed to update budget" }, { status: 500 });
     }
 
-    await db.update(budgets).set(updateData).where(eq(budgets.id, id));
-
-    const updated = await db.query.budgets.findFirst({
-      where: eq(budgets.id, id),
-      with: { category: true },
-    });
-
-    return NextResponse.json(updated);
+    return NextResponse.json(data);
   } catch (error) {
     return handleError(error);
   }
@@ -88,17 +103,21 @@ export async function DELETE(
 ) {
   try {
     const { userId } = await getAuthContext();
+    const supabase = await createClient();
     const { id } = await params;
 
-    const existing = await db.query.budgets.findFirst({
-      where: and(eq(budgets.id, id), eq(budgets.userId, userId)),
-    });
+    const existing = await getBudget(supabase, id, userId);
 
     if (!existing) {
       return NextResponse.json({ error: "Budget not found" }, { status: 404 });
     }
 
-    await db.delete(budgets).where(eq(budgets.id, id));
+    const { error: deleteError } = await supabase.from("budget").delete().eq("id", id);
+
+    if (deleteError) {
+      console.error("Supabase delete error:", deleteError);
+      return NextResponse.json({ error: "Failed to delete budget" }, { status: 500 });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

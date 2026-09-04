@@ -22,6 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { categoryIcons, categoryColors } from "@/lib/utils";
+import { CategoryIcon } from "@/components/category-icon";
 import { useEffect } from "react";
 
 const categorySchema = z.object({
@@ -97,11 +98,12 @@ export function CategoryFormDialog({
                   key={icon}
                   type="button"
                   data-active={form.watch("icon") === icon}
-                  className="flex h-8 w-8 items-center justify-center rounded-md border text-xs hover:bg-accent data-[active=true]:border-primary data-[active=true]:bg-primary/10"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border text-xs hover:bg-accent data-[active=true]:border-primary data-[active=true]:bg-primary/10"
                   onClick={() => form.setValue("icon", icon)}
                   title={icon}
+                  aria-label={icon}
                 >
-                  {icon === "circle" ? "○" : icon === "shopping-cart" ? "🛒" : icon === "utensils" ? "🍽" : icon === "car" ? "🚗" : icon === "home" ? "🏠" : icon === "gamepad-2" ? "🎮" : icon === "shirt" ? "👕" : icon === "heart-pulse" ? "❤" : icon === "graduation-cap" ? "🎓" : icon === "plane" ? "✈" : icon === "smartphone" ? "📱" : icon === "tv" ? "📺" : icon === "dumbbell" ? "💪" : icon === "book-open" ? "📖" : icon === "music" ? "🎵" : icon === "dog" ? "🐕" : icon === "gift" ? "🎁" : icon === "coins" ? "💰" : icon === "piggy-bank" ? "🐷" : icon === "credit-card" ? "💳" : icon === "building-2" ? "🏢" : icon === "wifi" ? "📶" : icon === "droplets" ? "💧" : icon === "zap" ? "⚡" : icon === "fire" ? "🔥" : "○"}
+                  <CategoryIcon icon={icon} className="h-4 w-4" />
                 </button>
               ))}
             </div>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -19,13 +19,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Search, Filter, Loader2, Trash2 } from "lucide-react";
+import { Plus, Search, Filter, Loader2, Trash2, Circle } from "lucide-react";
+import { categoryIconMap } from "@/components/category-icon";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import {
   useTransactions,
   useCreateTransaction,
   useDeleteTransaction,
-  type Transaction,
   type TransactionFilters,
 } from "@/hooks/use-transactions";
 import { useCategories } from "@/hooks/use-categories";
@@ -64,6 +64,7 @@ export default function TransactionsPage() {
         date: new Date(data.date).toISOString(),
         type: data.type,
         categoryId: data.categoryId || null,
+        tags: data.tags ? data.tags.split(",").map((t) => t.trim()).filter(Boolean) : undefined,
         notes: data.notes || null,
       },
       { onSuccess: () => setDialogOpen(false) }
@@ -75,23 +76,21 @@ export default function TransactionsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Transactions</h1>
-          <p className="text-sm md:text-base text-muted-foreground">
-            View and manage all your transactions.
-          </p>
+          <h1 className="text-xl md:text-2xl font-semibold tracking-tight">Transactions</h1>
+          <p className="text-sm text-muted-foreground">View and manage all your transactions.</p>
         </div>
-        <Button className="gap-2 w-full sm:w-auto" onClick={() => setDialogOpen(true)}>
+        <Button className="gap-1.5 w-full sm:w-auto" onClick={() => setDialogOpen(true)}>
           <Plus className="h-4 w-4" />
           Add Transaction
         </Button>
       </div>
 
       <Card>
-        <CardHeader className="pb-3">
-          <div className="flex flex-col sm:flex-row gap-3">
+        <CardHeader className="px-4 py-3">
+          <div className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -130,77 +129,75 @@ export default function TransactionsPage() {
                   <SelectItem value="income">Income</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" size="icon" onClick={applyFilters}>
+              <Button variant="outline" size="icon" aria-label="Apply transaction filters" onClick={applyFilters}>
                 <Filter className="h-4 w-4" />
               </Button>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-0 sm:p-6 sm:pt-0">
+        <CardContent className="p-0">
           {isLoading ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <div className="flex justify-center py-10">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : !transactions?.length ? (
-            <div className="text-center py-12 text-muted-foreground px-6">
-              <p className="text-lg mb-2">No transactions found</p>
+            <div className="text-center py-10 text-muted-foreground px-4">
+              <p className="text-sm mb-1">No transactions found</p>
               <p className="text-sm">Add your first transaction to get started.</p>
             </div>
           ) : (
-            <div className="sm:rounded-md sm:border">
-              <div className="hidden sm:grid grid-cols-5 gap-4 p-4 text-sm font-medium text-muted-foreground border-b">
-                <div className="col-span-2">Description</div>
-                <div>Category</div>
-                <div>Date</div>
-                <div className="text-right">Amount</div>
+            <div>
+              <div className="hidden sm:grid grid-cols-12 gap-3 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b">
+                <div className="col-span-5">Description</div>
+                <div className="col-span-3">Category</div>
+                <div className="col-span-2">Date</div>
+                <div className="col-span-2 text-right">Amount</div>
               </div>
-              {transactions.map((tx) => (
-                <div
-                  key={tx.id}
-                  className="grid grid-cols-1 sm:grid-cols-5 gap-1 sm:gap-4 p-4 text-sm border-b last:border-0 hover:bg-muted/50 transition-colors group"
-                >
-                  <div className="sm:col-span-2 flex items-center justify-between sm:justify-normal">
-                    <div>
-                      <p className="font-medium">{tx.description}</p>
-                      <p className="text-xs text-muted-foreground sm:hidden">
-                        {tx.category?.name ?? "Uncategorized"} &middot; {formatDate(new Date(tx.date))}
-                      </p>
+              {transactions.map((tx) => {
+            const IconComponent = tx.category?.icon
+              ? categoryIconMap[tx.category.icon] ?? Circle
+              : Circle;
+                return (
+                  <div
+                    key={tx.id}
+                    className="grid grid-cols-1 sm:grid-cols-12 gap-1 sm:gap-3 px-4 py-3 text-sm border-b last:border-0 hover:bg-muted/30 transition-colors group items-center"
+                  >
+                    <div className="sm:col-span-5 flex items-center gap-2.5 min-w-0">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted flex-shrink-0">
+                        <IconComponent className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{tx.description}</p>
+                        <p className="text-xs text-muted-foreground sm:hidden">
+                          {tx.category?.name ?? "Uncategorized"} &middot; {formatDate(new Date(tx.date))}
+                        </p>
+                      </div>
                     </div>
-                    <Button
-                      variant="ghost" size="icon"
-                      className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity sm:hidden"
-                      onClick={() => setDeleting(tx.id)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                    </Button>
+                    <div className="hidden sm:block col-span-3">
+                      <span className="inline-flex items-center rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
+                        <IconComponent className="h-3.5 w-3.5" /> {tx.category?.name ?? "Uncategorized"}
+                      </span>
+                    </div>
+                    <div className="hidden sm:block col-span-2 text-muted-foreground text-xs">
+                      {formatDate(new Date(tx.date))}
+                    </div>
+                    <div className="col-span-2 flex items-center justify-between sm:justify-end">
+                      <span className={`text-sm font-medium tabular-nums ${tx.type === "income" ? "text-emerald-600 dark:text-emerald-400" : "text-foreground"}`}>
+                        {tx.type === "income" ? "+" : "-"}
+                        {formatCurrency(tx.amount, tx.currency)}
+                      </span>
+                      <Button
+                        variant="ghost" size="icon"
+                        className="h-7 w-7 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                        aria-label={`Delete ${tx.description}`}
+                        onClick={() => setDeleting(tx.id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="hidden sm:block">
-                    <span className="inline-flex items-center rounded-md bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
-                      {tx.category?.name ?? "Uncategorized"}
-                    </span>
-                  </div>
-                  <div className="hidden sm:block text-muted-foreground">
-                    {formatDate(new Date(tx.date))}
-                  </div>
-                  <div className="flex items-center justify-between sm:justify-normal">
-                    <span
-                      className={`text-right font-medium ${
-                        tx.amount > 0 ? "text-emerald-600 dark:text-emerald-400" : ""
-                      }`}
-                    >
-                      {tx.amount > 0 ? "+" : ""}
-                      {formatCurrency(tx.amount, tx.currency)}
-                    </span>
-                    <Button
-                      variant="ghost" size="icon"
-                      className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity hidden sm:inline-flex"
-                      onClick={() => setDeleting(tx.id)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
@@ -219,13 +216,14 @@ export default function TransactionsPage() {
             <DialogDescription>This action cannot be undone.</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleting(null)}>Cancel</Button>
+            <Button variant="outline" size="sm" onClick={() => setDeleting(null)}>Cancel</Button>
             <Button
               variant="destructive"
+              size="sm"
               onClick={() => deleting && handleDelete(deleting)}
               disabled={deleteTransaction.isPending}
             >
-              {deleteTransaction.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Delete"}
+              {deleteTransaction.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Delete"}
             </Button>
           </DialogFooter>
         </DialogContent>

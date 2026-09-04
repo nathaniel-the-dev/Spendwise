@@ -22,10 +22,39 @@ export type BudgetInput = {
   endDate?: string | null;
 };
 
+type RawBudget = {
+  id: string;
+  user_id: string;
+  category_id: string | null;
+  amount: number;
+  currency: string;
+  period: "weekly" | "monthly" | "yearly";
+  start_date: string;
+  end_date: string | null;
+  created_at: string;
+  updated_at: string;
+  category?: { id: string; name: string; color: string; icon: string } | null;
+};
+
+function mapBudget(raw: RawBudget): Budget {
+  return {
+    id: raw.id,
+    userId: raw.user_id,
+    categoryId: raw.category_id,
+    amount: raw.amount,
+    currency: raw.currency,
+    period: raw.period,
+    startDate: raw.start_date,
+    endDate: raw.end_date,
+    category: raw.category ?? null,
+  };
+}
+
 async function fetchBudgets(): Promise<Budget[]> {
   const res = await fetch("/api/budgets");
   if (!res.ok) throw new Error("Failed to fetch budgets");
-  return res.json();
+  const data: RawBudget[] = await res.json();
+  return data.map(mapBudget);
 }
 
 async function createBudget(data: BudgetInput): Promise<Budget> {
@@ -38,7 +67,7 @@ async function createBudget(data: BudgetInput): Promise<Budget> {
     const err = await res.json();
     throw new Error(err.error || "Failed to create budget");
   }
-  return res.json();
+  return mapBudget(await res.json());
 }
 
 async function updateBudget(id: string, data: Partial<BudgetInput>): Promise<Budget> {
@@ -51,7 +80,7 @@ async function updateBudget(id: string, data: Partial<BudgetInput>): Promise<Bud
     const err = await res.json();
     throw new Error(err.error || "Failed to update budget");
   }
-  return res.json();
+  return mapBudget(await res.json());
 }
 
 async function deleteBudget(id: string): Promise<void> {
@@ -63,7 +92,7 @@ async function deleteBudget(id: string): Promise<void> {
 }
 
 export function useBudgets() {
-  return useQuery({ queryKey: ["budgets"], queryFn: fetchBudgets });
+  return useQuery({ queryKey: ["budgets"], queryFn: fetchBudgets, staleTime: 30_000 });
 }
 
 export function useCreateBudget() {

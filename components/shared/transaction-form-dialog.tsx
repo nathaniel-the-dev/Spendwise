@@ -32,6 +32,7 @@ const transactionSchema = z.object({
   date: z.string().min(1, "Date is required"),
   type: z.enum(["expense", "income"]),
   categoryId: z.string().optional(),
+  tags: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -70,7 +71,7 @@ export function TransactionFormDialog({
   useEffect(() => {
     if (open) form.reset({
       amount: 0, currency: "USD", description: "", date: new Date().toISOString().split("T")[0],
-      type: "expense", categoryId: "", notes: "", ...defaultValues,
+      type: "expense", categoryId: "", tags: "", notes: "", ...defaultValues,
     });
   }, [open, defaultValues, form]);
 
@@ -91,12 +92,12 @@ export function TransactionFormDialog({
               )}
             </div>
             <div className="space-y-2">
-              <Label>Currency</Label>
+              <Label htmlFor="transaction-currency">Currency</Label>
               <Select
                 defaultValue={form.watch("currency") || "USD"}
                 onValueChange={(v) => form.setValue("currency", v)}
               >
-                <SelectTrigger>
+                <SelectTrigger id="transaction-currency">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -120,12 +121,12 @@ export function TransactionFormDialog({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Type</Label>
+              <Label htmlFor="transaction-type">Type</Label>
               <Select
                 defaultValue={form.watch("type")}
                 onValueChange={(v) => form.setValue("type", v as "expense" | "income")}
               >
-                <SelectTrigger>
+                <SelectTrigger id="transaction-type">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -144,16 +145,16 @@ export function TransactionFormDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>Category</Label>
+            <Label htmlFor="transaction-category">Category</Label>
             <Select
-              defaultValue={form.watch("categoryId")}
-              onValueChange={(v) => form.setValue("categoryId", v)}
+                value={form.watch("categoryId") || "none"}
+                onValueChange={(v) => form.setValue("categoryId", v === "none" ? "" : v)}
             >
-              <SelectTrigger>
+              <SelectTrigger id="transaction-category">
                 <SelectValue placeholder="No category" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No category</SelectItem>
+                <SelectItem value="none">No category</SelectItem>
                 {categories?.map((cat) => (
                   <SelectItem key={cat.id} value={cat.id}>
                     {cat.name}
@@ -161,6 +162,11 @@ export function TransactionFormDialog({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="tags">Tags (comma separated, optional)</Label>
+            <Input id="tags" placeholder="e.g. food, groceries" {...form.register("tags")} />
           </div>
 
           <div className="space-y-2">
