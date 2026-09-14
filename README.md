@@ -12,7 +12,7 @@ A modern, personal finance tracker built with **Next.js 15**. Track expenses and
 - **Subscriptions** — Track recurring payments with billing-cycle normalization and upcoming renewal alerts.
 - **Reports** — Interactive donut/bar charts with per-category breakdowns.
 - **Categories** — Custom categories with a Lucide icon and color.
-- **Settings** — Update your profile, preferred currency, locale, and theme, and change your password.
+- **Settings** — Update your display name, preferred currency, and theme, and change your password.
 - **Supabase auth** — Email/password sign-up & login with a secure PKCE callback flow; dashboard is protected via middleware.
 - **Dark mode** — System-aware theme with a manual toggle.
 - **Responsive & accessible** — Mobile-first layout, keyboard-friendly Radix UI primitives, reduced-motion support.
@@ -88,7 +88,7 @@ The app reads and writes through Supabase PostgREST. Tables and key columns (all
 │   │   ├── transactions/       # GET/POST (search & filters), by id
 │   │   ├── budgets/            # GET/POST, PATCH/DELETE by id
 │   │   ├── subscriptions/      # GET/POST, PATCH/DELETE by id
-│   │   └── settings/           # PATCH profile; /password change
+│   │   └── settings/           # GET/PATCH profile; /password change
 │   ├── dashboard/              # Protected pages
 │   │   ├── page.tsx            # Overview ("available this month" hero + alerts)
 │   │   ├── transactions/ categories/ budgets/ subscriptions/ reports/ settings/

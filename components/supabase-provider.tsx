@@ -15,9 +15,14 @@ type UserData = {
 type UserContextType = {
   user: UserData | null;
   loading: boolean;
+  refresh: () => Promise<void>;
 };
 
-const UserContext = createContext<UserContextType>({ user: null, loading: true });
+const UserContext = createContext<UserContextType>({
+  user: null,
+  loading: true,
+  refresh: async () => {},
+});
 
 function mapUser(user: User): UserData {
   return {
@@ -51,8 +56,13 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  async function refresh() {
+    const { data } = await supabase.auth.getSession();
+    setUser(data.session?.user ? mapUser(data.session.user) : null);
+  }
+
   return (
-    <UserContext.Provider value={{ user, loading }}>
+    <UserContext.Provider value={{ user, loading, refresh }}>
       {children}
     </UserContext.Provider>
   );

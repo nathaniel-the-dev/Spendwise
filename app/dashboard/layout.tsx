@@ -9,7 +9,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -28,6 +27,7 @@ import {
   Moon,
   Sun,
   Search,
+  UserRound,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useUser } from "@/components/supabase-provider";
@@ -131,18 +131,44 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <ChevronDown className="h-4 w-4 text-sidebar-foreground/40 flex-shrink-0" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuLabel className="text-xs">My Account</DropdownMenuLabel>
+            <DropdownMenuContent align="end" sideOffset={8} className="w-64">
+              <div className="flex items-center gap-3 px-3 py-2.5">
+                <Avatar className="h-10 w-10 ring-2 ring-primary/20">
+                  <AvatarImage src={user?.image ?? undefined} />
+                  <AvatarFallback
+                    style={{ background: getAvatarGradient(name), color: "#fff", fontSize: 14 }}
+                  >
+                    {initial}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{name}</p>
+                  <p className="truncate text-xs text-muted-foreground">{email}</p>
+                </div>
+              </div>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-xs" asChild>
-                <Link href="/dashboard/settings">Settings</Link>
+              <DropdownMenuItem className="text-sm" asChild>
+                <Link href="/dashboard/settings#profile">
+                  <UserRound className="h-4 w-4 mr-2" />
+                  Manage profile
+                </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem className="text-xs" onClick={async () => {
-                const supabase = createClient();
-                await supabase.auth.signOut();
-                router.push("/");
-              }}>
-                <LogOut className="h-3.5 w-3.5 mr-2" />
+              <DropdownMenuItem className="text-sm" asChild>
+                <Link href="/dashboard/settings">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Settings
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-sm text-destructive focus:text-destructive"
+                onClick={async () => {
+                  const supabase = createClient();
+                  await supabase.auth.signOut();
+                  router.push("/");
+                }}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
                 Sign Out
               </DropdownMenuItem>
             </DropdownMenuContent>

@@ -1,49 +1,79 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useTheme } from "next-themes";
+import { toast } from "sonner";
+import { User, Palette, Shield, Monitor, Sun, Moon, Camera, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { CurrencySelect } from "@/components/shared/currency-select";
+import { AvatarPicker } from "@/components/shared/avatar-picker";
 import { useUser } from "@/components/supabase-provider";
-import { User, Palette, Shield, Camera, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
-const accentColors = [
-  { name: "Green", value: "oklch(0.62 0.17 155)", className: "bg-[oklch(0.62_0.17_155)]" },
-  { name: "Rose", value: "oklch(0.58 0.19 10)", className: "bg-[oklch(0.58_0.19_10)]" },
-  { name: "Violet", value: "oklch(0.55 0.2 290)", className: "bg-[oklch(0.55_0.2_290)]" },
-  { name: "Amber", value: "oklch(0.72 0.16 75)", className: "bg-[oklch(0.72_0.16_75)]" },
-  { name: "Cyan", value: "oklch(0.62 0.14 220)", className: "bg-[oklch(0.62_0.14_220)]" },
-  { name: "Emerald", value: "oklch(0.62 0.17 155)", className: "bg-[oklch(0.62_0.17_155)]" },
-];
+const themeOptions = [
+  { value: "light", label: "Light", icon: Sun },
+  { value: "dark", label: "Dark", icon: Moon },
+  { value: "system", label: "System", icon: Monitor },
+] as const;
+
+type Profile = {
+  name?: string;
+  preferred_currency?: string;
+  theme?: string;
+};
 
 export default function SettingsPage() {
-  const { user } = useUser();
-  const [selectedAccent, setSelectedAccent] = useState("oklch(0.62 0.17 155)");
-  const [compactView, setCompactView] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [changingPassword, setChangingPassword] = useState(false);
+  const { user, refresh } = useUser();
+  const { setTheme } = useTheme();
+
   const [name, setName] = useState(user?.name ?? "");
+  const [currency, setCurrency] = useState("USD");
+  const [themePref, setThemePref] = useState<string>("system");
+
+  const [loading, setLoading] = useState(true);
+  const [savingName, setSavingName] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [savingAvatar, setSavingAvatar] = useState(false);
 
   const initial = user?.name?.charAt(0)?.toUpperCase() ?? "U";
 
-  async function handleSaveProfile() {
+  // Load persisted settings from the user profile row.
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/settings");
+        if (!res.ok) return;
+        const data = (await res.json()) as Profile;
+        if (!active) return;
+        if (data.name) setName(data.name);
+        if (data.preferred_currency) setCurrency(data.preferred_currency);
+        if (data.theme) {
+          setThemePref(data.theme);
+          setTheme(data.theme);
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function handleSaveName() {
     if (!name.trim()) {
       toast.error("Name cannot be empty");
       return;
     }
-    setSaving(true);
+    setSavingName(true);
     try {
       const res = await fetch("/api/settings", {
         method: "PATCH",
@@ -58,8 +88,58 @@ export default function SettingsPage() {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save");
     } finally {
-      setSaving(false);
+      setSavingName(false);
     }
+  }
+
+  async function handleAvatarApply(url: string) {
+    setSavingAvatar(true);
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ avatarUrl: url }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to save avatar");
+      }
+      await refresh();
+      toast.success("Avatar updated");
+      setPickerOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save avatar");
+    } finally {
+      setSavingAvatar(false);
+    }
+  }
+
+  async function persist(payload: Record<string, unknown>, successMsg: string) {
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to save");
+      }
+      toast.success(successMsg);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save");
+    }
+  }
+
+  function handleCurrencyChange(value: string) {
+    setCurrency(value);
+    persist({ preferredCurrency: value }, "Currency preference saved");
+  }
+
+  function handleThemeChange(value: string) {
+    setThemePref(value);
+    setTheme(value);
+    persist({ theme: value }, "Theme updated");
   }
 
   async function handleChangePassword(formData: FormData) {
@@ -93,40 +173,41 @@ export default function SettingsPage() {
     <div className="space-y-5 max-w-2xl animate-fade-in">
       <div>
         <h1 className="text-xl md:text-2xl font-semibold tracking-tight">Settings</h1>
-        <p className="text-sm text-muted-foreground">Make SpendWise feel like yours.</p>
+        <p className="text-sm text-muted-foreground">Manage your account and preferences.</p>
       </div>
 
-      <Card className="animate-fade-in-up stagger-1">
+      {/* Profile */}
+      <Card id="profile" className="animate-fade-in-up stagger-1">
         <CardHeader>
-          <div className="flex items-center gap-3">
-            <Avatar className="h-12 w-12 ring-2 ring-primary/20">
-              <AvatarImage src={user?.image ?? undefined} />
-              <AvatarFallback
-                className="text-base"
-                style={{
-                  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                  color: "#fff",
-                }}
+          <div className="flex items-center gap-4">
+            <div className="relative shrink-0">
+              <Avatar className="h-20 w-20 ring-2 ring-primary/20">
+                <AvatarImage src={user?.image ?? undefined} />
+                <AvatarFallback className="text-2xl">{initial}</AvatarFallback>
+              </Avatar>
+              <Button
+                type="button"
+                variant="secondary"
+                size="icon"
+                className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full shadow-sm"
+                onClick={() => setPickerOpen(true)}
+                aria-label="Choose an avatar"
               >
-                {initial}
-              </AvatarFallback>
-            </Avatar>
+                <Camera className="h-4 w-4" />
+              </Button>
+            </div>
             <div>
-              <CardTitle className="text-sm">Your Profile</CardTitle>
-              <p className="text-xs text-muted-foreground">This is how others see you.</p>
+              <CardTitle className="flex items-center gap-2 text-sm">
+                <User className="h-4 w-4 text-muted-foreground" />
+                Your Profile
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Personalize your avatar and account details.
+              </p>
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="gap-1.5" disabled>
-              <Camera className="h-4 w-4" />
-              Change Photo
-            </Button>
-            <Button variant="ghost" size="sm" className="text-destructive" disabled>
-              Remove
-            </Button>
-          </div>
           <div className="space-y-1.5">
             <Label htmlFor="name" className="text-sm">Display Name</Label>
             <Input
@@ -134,6 +215,7 @@ export default function SettingsPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Your name"
+              disabled={loading}
             />
           </div>
           <div className="space-y-1.5">
@@ -141,13 +223,14 @@ export default function SettingsPage() {
             <Input id="email" type="email" defaultValue={user?.email ?? ""} disabled />
             <p className="text-xs text-muted-foreground">Email cannot be changed.</p>
           </div>
-          <Button onClick={handleSaveProfile} disabled={saving}>
-            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : null}
+          <Button onClick={handleSaveName} disabled={savingName || loading}>
+            {savingName ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : null}
             Save Changes
           </Button>
         </CardContent>
       </Card>
 
+      {/* Appearance */}
       <Card className="animate-fade-in-up stagger-2">
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -156,105 +239,60 @@ export default function SettingsPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <Label htmlFor="compact-view" className="text-sm">Compact View</Label>
-              <p className="text-xs text-muted-foreground">Show more content with reduced spacing</p>
-            </div>
-            <Switch id="compact-view" checked={compactView} onCheckedChange={setCompactView} />
-          </div>
-
-          <Separator />
-
           <div className="space-y-2">
-            <Label className="text-sm">Accent Color</Label>
-            <p className="text-xs text-muted-foreground">Choose your app&apos;s personality.</p>
-            <div className="flex gap-2.5 flex-wrap">
-              {accentColors.map((color) => (
-                <button
-                  key={color.name}
-                  type="button"
-                  title={color.name}
-                  aria-label={`Select ${color.name} accent color`}
-                  data-active={selectedAccent === color.value}
-                  className="h-7 w-7 rounded-full transition-all hover:scale-110 data-[active=true]:scale-110 data-[active=true]:ring-2 data-[active=true]:ring-offset-2 data-[active=true]:ring-offset-background"
-                  style={{ backgroundColor: color.value }}
-                  onClick={() => setSelectedAccent(color.value)}
-                />
-              ))}
-            </div>
-          </div>
-
-          <Separator />
-
-          <div className="space-y-2">
-            <Label className="text-sm">Dashboard Layout</Label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                data-active={!compactView}
-                className="rounded-lg border p-3 text-left transition-all data-[active=true]:border-primary data-[active=true]:bg-primary/5 hover:border-primary/50"
-                onClick={() => setCompactView(false)}
-              >
-                <p className="text-sm font-medium">Cozy</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Spacious cards with generous spacing</p>
-              </button>
-              <button
-                type="button"
-                data-active={compactView}
-                className="rounded-lg border p-3 text-left transition-all data-[active=true]:border-primary data-[active=true]:bg-primary/5 hover:border-primary/50"
-                onClick={() => setCompactView(true)}
-              >
-                <p className="text-sm font-medium">Compact</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Denser layout, more info at once</p>
-              </button>
+            <Label className="text-sm">Theme</Label>
+            <p className="text-xs text-muted-foreground">Choose how SpendWise looks for you.</p>
+            <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Theme">
+              {themeOptions.map((option) => {
+                const Icon = option.icon;
+                const active = themePref === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    onClick={() => handleThemeChange(option.value)}
+                    className={cn(
+                      "flex flex-col items-center gap-2 rounded-lg border p-3 text-sm font-medium transition-all",
+                      active
+                        ? "border-primary bg-primary/5 text-primary"
+                        : "hover:border-primary/50 hover:bg-muted/50"
+                    )}
+                  >
+                    <Icon className="h-5 w-5" />
+                    {option.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </CardContent>
       </Card>
 
+      {/* Preferences */}
       <Card className="animate-fade-in-up stagger-3">
         <CardHeader>
           <CardTitle className="text-sm">Preferences</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent>
           <div className="space-y-1.5">
             <Label htmlFor="currency" className="text-sm">Preferred Currency</Label>
-            <Select defaultValue="USD">
-              <SelectTrigger id="currency">
-                <SelectValue placeholder="Select currency" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="USD">USD - US Dollar</SelectItem>
-                <SelectItem value="EUR">EUR - Euro</SelectItem>
-                <SelectItem value="GBP">GBP - British Pound</SelectItem>
-                <SelectItem value="JPY">JPY - Japanese Yen</SelectItem>
-                <SelectItem value="CAD">CAD - Canadian Dollar</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="week-start" className="text-sm">Week Starts On</Label>
-            <Select defaultValue="monday">
-              <SelectTrigger id="week-start">
-                <SelectValue placeholder="Select day" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="monday">Monday</SelectItem>
-                <SelectItem value="sunday">Sunday</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <Label htmlFor="email-digest" className="text-sm">Weekly Email Digest</Label>
-              <p className="text-xs text-muted-foreground">Get a summary of your spending every week</p>
-            </div>
-            <Switch id="email-digest" defaultChecked />
+            <p className="text-xs text-muted-foreground">
+              The base currency used when you log transactions without one.
+            </p>
+            <CurrencySelect
+              value={currency}
+              onValueChange={handleCurrencyChange}
+              id="currency"
+              disabled={loading}
+              triggerClassName="max-w-xs"
+            />
           </div>
         </CardContent>
       </Card>
 
+      {/* Security */}
       <Card className="animate-fade-in-up stagger-4">
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -262,24 +300,27 @@ export default function SettingsPage() {
             <CardTitle className="text-sm">Security</CardTitle>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <Label htmlFor="2fa" className="text-sm">Two-Factor Authentication</Label>
-              <p className="text-xs text-muted-foreground">Add an extra layer of security to your account</p>
-            </div>
-            <Switch id="2fa" />
-          </div>
-          <Separator />
-          <form id="password-form" onSubmit={(e) => { e.preventDefault(); handleChangePassword(new FormData(e.currentTarget)); }} className="space-y-4">
+        <CardContent>
+          <form
+            id="password-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleChangePassword(new FormData(e.currentTarget));
+            }}
+            className="space-y-4"
+          >
             <div className="space-y-1.5">
               <Label htmlFor="current-password" className="text-sm">Current Password</Label>
-              <Input id="current-password" name="currentPassword" type="password" />
+              <Input id="current-password" name="currentPassword" type="password" autoComplete="current-password" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="new-password" className="text-sm">New Password</Label>
-              <Input id="new-password" name="newPassword" type="password" />
+              <Input id="new-password" name="newPassword" type="password" autoComplete="new-password" />
+              <p className="text-xs text-muted-foreground">
+                Must be at least 8 characters and include upper &amp; lowercase letters and a number.
+              </p>
             </div>
+            <Separator />
             <Button variant="outline" type="submit" disabled={changingPassword}>
               {changingPassword ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : null}
               Update Password
@@ -287,6 +328,15 @@ export default function SettingsPage() {
           </form>
         </CardContent>
       </Card>
+
+      <AvatarPicker
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        currentUrl={user?.image}
+        seedHint={name}
+        saving={savingAvatar}
+        onApply={handleAvatarApply}
+      />
     </div>
   );
 }
