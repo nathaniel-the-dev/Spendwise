@@ -6,6 +6,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
 import {
+  ContourField, DoodleArrow, HankoSeal, InkArc, InkUnderline,
+  LedgerRules, PaperGrain, PaperTexture, ReceiptCard, WatermarkGlyph,
+} from "@/components/marketing/graphics";
+import {
   DashboardMockup, DotGrid, Eyebrow, GradientOrb,
 } from "@/components/marketing/visuals";
 import { SiteFooter, SiteHeader } from "@/components/marketing/chrome";
@@ -107,60 +111,76 @@ export default async function MarketingPage() {
       <SiteHeader session={session} />
 
       <main className="flex-1">
-        {/* ── Hero ────────────────────────────────────────── */}
+        {/* ── Hero: the open ledger ───────────────────────────
+            Two columns on ruled paper. The headline is the entry,
+            the receipt is the proof — the product's answer printed
+            and torn like a real one. The brush underline drawing
+            itself under the promise is the page's one motion moment. */}
         <section className="relative overflow-hidden">
-          <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-            <DotGrid className="w-full h-full text-primary/60" />
-            <div className="absolute -top-40 -right-40 w-96 h-96">
+          <LedgerRules />
+          <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
+            <ContourField className="absolute -right-44 -top-32 h-136 w-136 text-primary/15" />
+            <div className="absolute -top-40 right-1/3 w-96 h-96">
               <GradientOrb color="#1f9d63" />
             </div>
-            <div className="absolute -bottom-40 -left-40 w-80 h-80">
-              <GradientOrb color="#35b57d" />
-            </div>
           </div>
+          <PaperTexture />
+          <PaperGrain className="opacity-[0.12] dark:opacity-[0.08]" />
           <div className="mx-auto max-w-5xl px-4 py-20 md:py-28 relative">
-            <div className="mx-auto max-w-3xl text-center">
-              <Eyebrow>A calmer way to manage everyday money</Eyebrow>
-              <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-semibold tracking-[-0.02em] leading-[1.02] mb-4 mt-6">
-                Know where your money goes.
-                <span className="text-primary"> Plan what comes next.</span>
-              </h1>
-              <p className="text-lg text-muted-foreground max-w-xl mx-auto mb-8 leading-relaxed">
-                SpendWise brings spending, recurring payments, budgets, and useful context into one clear view —
-                so the question &ldquo;can I afford this?&rdquo; has an instant answer.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                {session ? (
-                  <Link href="/dashboard">
-                    <Button size="lg" className="gap-1.5 text-sm font-medium shadow-sm">
-                      Go to Dashboard <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </Link>
-                ) : (
-                  <>
-                    <Link href="/register">
+            <div className="grid lg:grid-cols-[1.15fr_0.85fr] gap-14 lg:gap-10 items-center">
+              <div>
+                <Eyebrow>A calmer way to manage everyday money</Eyebrow>
+                <h1 className="font-display text-4xl md:text-6xl lg:text-[4.25rem] font-semibold tracking-[-0.02em] leading-[1.02] mb-5 mt-6">
+                  Know where your money goes.{" "}
+                  <span className="relative inline-block text-primary">
+                    Plan what comes next.
+                    <InkUnderline className="text-primary/50" />
+                  </span>
+                </h1>
+                <p className="text-lg text-muted-foreground max-w-xl mb-8 leading-relaxed">
+                  SpendWise brings spending, recurring payments, budgets, and useful context into one clear view —
+                  so the question &ldquo;can I afford this?&rdquo; has an instant answer.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  {session ? (
+                    <Link href="/dashboard">
                       <Button size="lg" className="gap-1.5 text-sm font-medium shadow-sm">
-                        Start Free <ArrowRight className="h-4 w-4" />
+                        Go to Dashboard <ArrowRight className="h-4 w-4" />
                       </Button>
                     </Link>
-                    <Link href="/login">
-                      <Button size="lg" variant="outline" className="text-sm font-medium">
-                        Sign In
-                      </Button>
-                    </Link>
-                  </>
-                )}
+                  ) : (
+                    <>
+                      <Link href="/register">
+                        <Button size="lg" className="gap-1.5 text-sm font-medium shadow-sm">
+                          Start Free <ArrowRight className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                      <Link href="/login">
+                        <Button size="lg" variant="outline" className="text-sm font-medium">
+                          Sign In
+                        </Button>
+                      </Link>
+                    </>
+                  )}
+                </div>
+                <p className="mt-4 text-xs text-muted-foreground">
+                  No bank logins &middot; no trackers &middot; no data sale &middot; your ledger stays yours
+                </p>
               </div>
-              <p className="mt-4 text-xs text-muted-foreground">
-                No bank logins &middot; no trackers &middot; no data sale &middot; your ledger stays yours
-              </p>
+              <div className="relative mx-auto lg:mx-0 justify-self-center">
+                <div className="absolute -inset-8" aria-hidden="true">
+                  <DotGrid className="w-full h-full text-primary/40" />
+                </div>
+                <ReceiptCard className="relative animate-fade-in-up" />
+              </div>
             </div>
           </div>
         </section>
 
-        {/* ── How it works ─────────────────────────────────── */}
-        <section id="how" className="border-t scroll-mt-16">
-          <div className="mx-auto max-w-5xl px-4 py-16">
+        {/* ── How it works: three entries, one margin rule ──── */}
+        <section id="how" className="border-t scroll-mt-16 relative">
+          <WatermarkGlyph char="S" className="absolute -top-10 right-6 text-[11rem] leading-none hidden md:block" />
+          <div className="mx-auto max-w-5xl px-4 py-16 relative">
             <div className="max-w-xl mb-10">
               <Eyebrow>How it works</Eyebrow>
               <h2 className="font-display text-2xl md:text-3xl font-semibold tracking-[-0.01em] mt-4 mb-2">
@@ -171,12 +191,15 @@ export default async function MarketingPage() {
                 trustworthy answer when they need one.
               </p>
             </div>
-            <ol className="grid md:grid-cols-3 gap-4 list-none">
-              {steps.map((s) => (
+            <ol className="grid md:grid-cols-3 gap-4 list-none relative">
+              {steps.map((s, i) => (
                 <li key={s.n} className="relative rounded-xl border bg-card p-5">
                   <span className="label-mono text-primary">{s.n}</span>
                   <h3 className="text-sm font-semibold mt-2 mb-1">{s.title}</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">{s.body}</p>
+                  {i < steps.length - 1 && (
+                    <DoodleArrow className="absolute -right-7 top-1/2 -translate-y-1/2 z-10 hidden md:block h-7 w-12 text-primary/45" />
+                  )}
                 </li>
               ))}
             </ol>
@@ -184,8 +207,11 @@ export default async function MarketingPage() {
         </section>
 
         {/* ── The one number spotlight ─────────────────────── */}
-        <section className="border-t relative">
-          <div className="mx-auto max-w-5xl px-4 py-16">
+        <section className="border-t relative overflow-hidden">
+          <div className="absolute inset-0" aria-hidden="true">
+            <ContourField className="absolute -left-56 top-1/2 -translate-y-1/2 h-120 w-120 text-primary/10" />
+          </div>
+          <div className="mx-auto max-w-5xl px-4 py-16 relative">
             <div className="grid lg:grid-cols-2 gap-10 items-center">
               <div>
                 <Eyebrow>
@@ -229,7 +255,8 @@ export default async function MarketingPage() {
 
         {/* ── Features ─────────────────────────────────────── */}
         <section id="features" className="border-t relative overflow-hidden scroll-mt-16">
-          <div className="mx-auto max-w-5xl px-4 py-16">
+          <PaperGrain />
+          <div className="mx-auto max-w-5xl px-4 py-16 relative">
             <div className="max-w-xl mb-10">
               <Eyebrow>
                 <Sparkles className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
@@ -266,11 +293,15 @@ export default async function MarketingPage() {
           </div>
         </section>
 
-        {/* ── Privacy ──────────────────────────────────────── */}
-        <section id="privacy" className="border-t bg-wash-moss scroll-mt-16">
-          <div className="mx-auto max-w-5xl px-4 py-16">
+        {/* ── Privacy: the stamped page ──────────────────────
+            The hanko seal is the receipt for this promise — a ledger
+            page is only trusted once it's stamped. */}
+        <section id="privacy" className="border-t bg-wash-moss relative overflow-hidden scroll-mt-16">
+          <PaperGrain />
+          <div className="mx-auto max-w-5xl px-4 py-16 relative">
             <div className="grid lg:grid-cols-[1fr_1.2fr] gap-10 items-start">
-              <div>
+              <div className="relative">
+                <HankoSeal className="absolute -top-4 -right-10 h-20 w-20 text-primary/25 hidden lg:block" />
                 <Eyebrow>
                   <ShieldCheck className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
                   Your data
@@ -319,8 +350,9 @@ export default async function MarketingPage() {
         </section>
 
         {/* ── FAQ preview ──────────────────────────────────── */}
-        <section className="border-t">
-          <div className="mx-auto max-w-5xl px-4 py-16">
+        <section className="border-t relative">
+          <LedgerRules className="opacity-60" />
+          <div className="mx-auto max-w-5xl px-4 py-16 relative">
             <div className="flex items-end justify-between gap-4 mb-8">
               <div>
                 <Eyebrow>Answers</Eyebrow>
@@ -346,11 +378,14 @@ export default async function MarketingPage() {
           </div>
         </section>
 
-        {/* ── Final CTA ────────────────────────────────────── */}
-        {/* The one committed green region: the whole surface IS the brand, so
+        {/* ── Final CTA ──────────────────────────────────────
+            The one committed green region: the whole surface IS the brand, so
             the closing ask reads as the page's loudest moment. Inverted
-            controls keep the primary action the brightest thing on screen. */}
+            controls keep the primary action the brightest thing on screen.
+            A single sumi-e sweep carries across it — the brushstroke that
+            closes the ledger. */}
         <section className="relative overflow-hidden bg-band text-band-foreground">
+          <InkArc className="absolute inset-0 h-full w-full text-band-foreground" />
           <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
             <DotGrid className="w-full h-full text-band-foreground/50" />
             <div className="absolute -top-24 -right-24 w-72 h-72">
@@ -360,7 +395,9 @@ export default async function MarketingPage() {
               <GradientOrb color="#4ecf94" />
             </div>
           </div>
+          <PaperGrain className="opacity-30 dark:opacity-20" />
           <div className="mx-auto max-w-5xl px-4 py-16 md:py-20 text-center relative">
+            <HankoSeal className="mx-auto mb-5 h-14 w-14 text-band-foreground/70" />
             <h2 className="font-display text-3xl md:text-4xl font-semibold tracking-[-0.02em] mb-3">
               Ready to take control?
             </h2>
