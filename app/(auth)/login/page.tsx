@@ -23,10 +23,13 @@ type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
+  const [mode, setMode] = useState<"signin" | "forgot">("signin");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotSent, setForgotSent] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -58,8 +61,30 @@ export default function LoginPage() {
       return;
     }
 
+    // Two-factor is opt-in per account: /mfa creates the challenge, and the
+    // middleware keeps aal1 sessions out of the dashboard until it's verified.
+    const { data: factors } = await supabase.auth.mfa.listFactors();
+    if (factors?.totp?.some((f) => f.status === "verified")) {
+      router.push("/mfa");
+      return;
+    }
+
     router.push("/dashboard");
     router.refresh();
+  }
+
+  async function handleForgot(e: React.FormEvent) {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+    const supabase = createClient();
+    await supabase.auth.resetPasswordForEmail(forgotEmail, {
+      redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+    });
+    // Always report success — the response must not reveal whether the
+    // address has an account.
+    setForgotSent(true);
+    setIsLoading(false);
   }
 
   async function handleGoogleSignIn() {
@@ -87,9 +112,17 @@ export default function LoginPage() {
             <Image src="/icon.png" alt="SpendWise logo" width={30} height={30} className="rounded-lg bg-white p-1 ring-1 ring-black/5" />
             <span>SpendWise</span>
           </Link>
-          <h1 className="font-display text-2xl font-semibold tracking-[-0.01em]">Welcome back</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Sign in to your account to continue</p>
-          <p className="text-xs text-muted-foreground mt-2">Your data stays yours — private by design, never sold, never bank-linked</p>
+          <h1 className="font-display text-2xl font-semibold tracking-[-0.01em]">
+            {mode === "signin" ? "Welcome back" : "Reset your password"}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {mode === "signin"
+              ? "Sign in to your account to continue"
+              : "We'll email you a secure link to choose a new password"}
+          </p>
+          {mode === "signin" && (
+            <p className="text-xs text-muted-foreground mt-2">Your data stays yours — private by design, never sold, never bank-linked</p>
+          )}
         </div>
 
         {notice && (
@@ -104,6 +137,48 @@ export default function LoginPage() {
           </div>
         )}
 
+        {mode === "forgot" ? (
+          forgotSent ? (
+            <div className="space-y-4" role="status">
+              <div className="bg-primary/10 text-primary text-sm rounded-lg p-4 leading-relaxed">
+                If an account exists for <strong>{forgotEmail}</strong>, a reset link is on its way.
+                It expires in 60 minutes. Check spam too.
+              </div>
+              <Button
+                variant="outline"
+                className="w-full h-11"
+                onClick={() => { setMode("signin"); setForgotSent(false); setError(null); }}
+              >
+                Back to sign in
+              </Button>
+            </div>
+          ) : (
+            <form onSubmit={handleForgot} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="forgot-email" className="text-sm">Email</Label>
+                <Input
+                  id="forgot-email"
+                  type="email"
+                  required
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                />
+              </div>
+              <Button type="submit" className="w-full h-11" disabled={isLoading || !forgotEmail}>
+                {isLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> <span>Sending...</span></> : "Send reset link"}
+              </Button>
+              <button
+                type="button"
+                className="w-full text-center text-sm text-muted-foreground transition-colors hover:text-foreground"
+                onClick={() => { setMode("signin"); setError(null); }}
+              >
+                Remembered it? Back to sign in
+              </button>
+            </form>
+          )
+        ) : (
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="email" className="text-sm">Email</Label>
@@ -123,6 +198,13 @@ export default function LoginPage() {
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <Label htmlFor="password" className="text-sm">Password</Label>
+              <button
+                type="button"
+                className="text-xs font-medium text-primary hover:underline"
+                onClick={() => { setMode("forgot"); setError(null); }}
+              >
+                Forgot password?
+              </button>
             </div>
             <div className="relative">
               <Input
@@ -147,7 +229,10 @@ export default function LoginPage() {
             {isLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> <span>Signing in...</span></> : "Sign In"}
           </Button>
         </form>
+        )}
 
+        {mode === "signin" && (
+        <>
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
             <span className="w-full border-t" />
@@ -171,13 +256,30 @@ export default function LoginPage() {
           </svg>
           Google
         </Button>
+        </>
+        )}
       </CardContent>
       <CardFooter className="justify-center px-6 pb-6 pt-0">
         <p className="text-sm text-muted-foreground">
-          Don&apos;t have an account?{" "}
-          <Link href="/register" className="text-primary hover:underline font-medium">
-            Create one
-          </Link>
+          {mode === "signin" ? (
+            <>
+              Don&apos;t have an account?{" "}
+              <Link href="/register" className="text-primary hover:underline font-medium">
+                Create one
+              </Link>
+            </>
+          ) : (
+            <>
+              Need to sign in?{" "}
+              <button
+                type="button"
+                className="font-medium text-primary hover:underline"
+                onClick={() => { setMode("signin"); setError(null); }}
+              >
+                Back
+              </button>
+            </>
+          )}
         </p>
       </CardFooter>
     </Card>

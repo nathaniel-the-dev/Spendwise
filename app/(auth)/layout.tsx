@@ -2,9 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Check } from "lucide-react";
 import { DotGrid } from "@/components/marketing/visuals";
-import {
-  ContourField, InkArc, LedgerRules, PaperGrain, PaperTexture, ReceiptCard,
-} from "@/components/marketing/graphics";
+import { ContourField, InkArc, ReceiptCard } from "@/components/marketing/graphics";
 
 /**
  * Auth shell — the ledger world, quietly. Left: the one committed green band
@@ -24,14 +22,13 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative flex min-h-screen flex-col lg:grid lg:grid-cols-[1.05fr_1fr]">
-      {/* ── Brand band (desktop) ─────────────────────────── */}
+    <div className="relative flex min-h-screen flex-col lg:grid lg:h-screen lg:grid-cols-[1.05fr_1fr] lg:overflow-hidden">
+      {/* ── Brand band (desktop) ─────────────────────── */}
       <aside className="relative hidden overflow-hidden bg-band text-band-foreground lg:flex lg:flex-col lg:justify-between lg:p-12 xl:p-16">
         <InkArc className="absolute inset-0 h-full w-full text-band-foreground" />
         <div className="pointer-events-none absolute inset-0" aria-hidden="true">
           <DotGrid className="h-full w-full text-band-foreground/50" />
         </div>
-        <PaperGrain className="opacity-25 dark:opacity-15" />
 
         <Link
           href="/"
@@ -76,12 +73,20 @@ export default function AuthLayout({
         </p>
       </aside>
 
-      {/* ── Form panel on paper ───────────────────────────── */}
-      <main className="relative flex flex-1 items-center justify-center overflow-y-auto px-4 py-10 sm:py-14">
-        <LedgerRules className="opacity-70" />
-        <PaperTexture />
-        <ContourField className="pointer-events-none absolute -bottom-36 -right-40 h-120 w-120 text-primary/10" />
-        <div className="relative flex w-full justify-center">
+      {/* ── Form panel ─────────────────────────────────
+          The backdrop is viewport-fixed (mobile) / panel-pinned (desktop) so
+          scrolling the form never drags the art along with it. Dots + wash +
+          contour — deliberately not the landing's paper world. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 lg:absolute lg:left-[51%] lg:right-0"
+      >
+        <div className="absolute inset-0 bg-gradient-to-b from-muted/50 via-background to-background" />
+        <DotGrid className="absolute inset-0 h-full w-full text-primary/50 opacity-50" />
+        <ContourField className="absolute -bottom-40 -right-44 h-120 w-120 text-primary/10" />
+      </div>
+      <main className="relative flex flex-1 items-center justify-center px-4 py-10 sm:py-14 lg:overflow-y-auto">
+        <div className="flex w-full justify-center">
           {children}
         </div>
       </main>

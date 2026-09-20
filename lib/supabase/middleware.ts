@@ -27,6 +27,19 @@ export async function updateSession(request: NextRequest) {
 		return NextResponse.redirect(url);
 	}
 
+	// Two-factor: an enrolled user whose session is still aal1 must pass the
+	// code check before any dashboard data loads. nextLevel reports aal2 only
+	// when a verified factor exists, so this is a no-op for non-enrolled users.
+	if (user && request.nextUrl.pathname.startsWith('/dashboard')) {
+		const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+		if (aal?.nextLevel === 'aal2' && aal.currentLevel === 'aal1') {
+			const url = request.nextUrl.clone();
+			url.pathname = '/mfa';
+			url.search = '';
+			return NextResponse.redirect(url);
+		}
+	}
+
 	if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/register')) {
 		const url = request.nextUrl.clone();
 		url.pathname = '/dashboard';

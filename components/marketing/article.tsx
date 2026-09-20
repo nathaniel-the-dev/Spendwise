@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { auth } from "@/lib/auth";
-import { Eyebrow } from "@/components/marketing/visuals";
+import { DotGrid, Eyebrow } from "@/components/marketing/visuals";
 import {
-  ContourField, InkArc, LedgerRules, PaperGrain, PaperTexture, WatermarkGlyph,
+  ContourField, InkArc, WatermarkGlyph,
 } from "@/components/marketing/graphics";
 import { SiteFooter, SiteHeader } from "@/components/marketing/chrome";
 
@@ -30,9 +30,10 @@ export async function ArticlePage({
     <div className="flex flex-col min-h-screen">
       <SiteHeader session={session} />
       <main className="flex-1">
-        <div className="relative overflow-hidden border-b">
-          <PaperTexture />
-          <LedgerRules className="opacity-70" />
+        <div className="relative overflow-hidden border-b bg-gradient-to-b from-muted/50 via-background to-background">
+          <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+            <DotGrid className="h-full w-full text-primary/60 opacity-50" />
+          </div>
           <ContourField className="pointer-events-none absolute -right-32 -top-24 h-96 w-96 text-primary/10" />
           <WatermarkGlyph char="§" className="absolute -bottom-6 right-8 hidden text-[10rem] leading-none md:block" />
           <div className="mx-auto max-w-3xl px-4 py-14 md:py-18 relative">
@@ -53,8 +54,7 @@ export async function ArticlePage({
             </aside>
           )}
         </div>
-        <div className="relative border-t bg-muted/30">
-          <PaperGrain />
+        <div className="border-t bg-muted/30">
           <div className="mx-auto max-w-3xl px-4 py-8 flex flex-wrap items-center justify-between gap-3 relative">
             <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
               <ArrowLeft className="h-4 w-4" aria-hidden="true" />

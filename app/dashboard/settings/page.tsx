@@ -13,6 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CurrencySelect } from "@/components/shared/currency-select";
 import { AvatarPicker } from "@/components/shared/avatar-picker";
+import { TwoFactorCard } from "@/components/shared/two-factor-card";
 import { useUser } from "@/components/supabase-provider";
 import { cn } from "@/lib/utils";
 
@@ -299,8 +300,11 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      {/* Two-factor (opt-in) */}
+      <TwoFactorCard />
+
       {/* Security */}
-      <Card className="animate-fade-in-up stagger-4">
+      <Card className="animate-fade-in-up stagger-5">
         <CardHeader>
           <div className="flex items-center gap-2">
             <Shield className="h-4 w-4 text-muted-foreground" />
