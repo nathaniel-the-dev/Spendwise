@@ -12,6 +12,9 @@ import {
 import {
   DashboardMockup, DotGrid, Eyebrow, GradientOrb,
 } from "@/components/marketing/visuals";
+import {
+  Parallax, Reveal, RevealGroup, ScrollSpin, Stamp,
+} from "@/components/marketing/scroll";
 import { SiteFooter, SiteHeader } from "@/components/marketing/chrome";
 
 type Tone = "primary" | "spend" | "success" | "warning";
@@ -119,7 +122,9 @@ export default async function MarketingPage() {
         <section className="relative overflow-hidden">
           <LedgerRules />
           <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
-            <ContourField className="absolute -right-44 -top-32 h-136 w-136 text-primary/15" />
+            <Parallax className="absolute -right-44 -top-32" speed={90}>
+              <ContourField className="h-136 w-136 text-primary/15" />
+            </Parallax>
             <div className="absolute -top-40 right-1/3 w-96 h-96">
               <GradientOrb color="#1f9d63" />
             </div>
@@ -128,20 +133,22 @@ export default async function MarketingPage() {
           <PaperGrain className="opacity-[0.12] dark:opacity-[0.08]" />
           <div className="mx-auto max-w-5xl px-4 py-20 md:py-28 relative">
             <div className="grid lg:grid-cols-[1.15fr_0.85fr] gap-14 lg:gap-10 items-center">
-              <div>
-                <Eyebrow>A calmer way to manage everyday money</Eyebrow>
-                <h1 className="font-display text-4xl md:text-6xl lg:text-[4.25rem] font-semibold tracking-[-0.02em] leading-[1.02] mb-5 mt-6">
+              <RevealGroup>
+                <div data-reveal>
+                  <Eyebrow>A calmer way to manage everyday money</Eyebrow>
+                </div>
+                <h1 data-reveal className="font-display text-4xl md:text-6xl lg:text-[4.25rem] font-semibold tracking-[-0.02em] leading-[1.02] mb-5 mt-6">
                   Know where your money goes.{" "}
                   <span className="relative inline-block text-primary">
                     Plan what comes next.
                     <InkUnderline className="text-primary/50" />
                   </span>
                 </h1>
-                <p className="text-lg text-muted-foreground max-w-xl mb-8 leading-relaxed">
+                <p data-reveal className="text-lg text-muted-foreground max-w-xl mb-8 leading-relaxed">
                   SpendWise brings spending, recurring payments, budgets, and useful context into one clear view —
                   so the question &ldquo;can I afford this?&rdquo; has an instant answer.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-3">
+                <div data-reveal className="flex flex-col sm:flex-row gap-3">
                   {session ? (
                     <Link href="/dashboard">
                       <Button size="lg" className="gap-1.5 text-sm font-medium shadow-sm">
@@ -163,16 +170,18 @@ export default async function MarketingPage() {
                     </>
                   )}
                 </div>
-                <p className="mt-4 text-xs text-muted-foreground">
+                <p data-reveal className="mt-4 text-xs text-muted-foreground">
                   No bank logins &middot; no trackers &middot; no data sale &middot; your ledger stays yours
                 </p>
-              </div>
-              <div className="relative mx-auto lg:mx-0 justify-self-center">
+              </RevealGroup>
+              <Parallax className="relative mx-auto lg:mx-0 justify-self-center" speed={-28}>
                 <div className="absolute -inset-8" aria-hidden="true">
                   <DotGrid className="w-full h-full text-primary/40" />
                 </div>
-                <ReceiptCard className="relative animate-fade-in-up" />
-              </div>
+                <Reveal delay={0.25} className="relative">
+                  <ReceiptCard />
+                </Reveal>
+              </Parallax>
             </div>
           </div>
         </section>
@@ -181,39 +190,45 @@ export default async function MarketingPage() {
         <section id="how" className="border-t scroll-mt-16 relative">
           <WatermarkGlyph char="S" className="absolute -top-10 right-6 text-[11rem] leading-none hidden md:block" />
           <div className="mx-auto max-w-5xl px-4 py-16 relative">
-            <div className="max-w-xl mb-10">
-              <Eyebrow>How it works</Eyebrow>
-              <h2 className="font-display text-2xl md:text-3xl font-semibold tracking-[-0.01em] mt-4 mb-2">
-                Three minutes to set up. Seconds per check after that.
-              </h2>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                SpendWise is built for the person who doesn&apos;t want a second job managing money — just a
-                trustworthy answer when they need one.
-              </p>
-            </div>
-            <ol className="grid md:grid-cols-3 gap-4 list-none relative">
-              {steps.map((s, i) => (
-                <li key={s.n} className="relative rounded-xl border bg-card p-5">
-                  <span className="label-mono text-primary">{s.n}</span>
-                  <h3 className="text-sm font-semibold mt-2 mb-1">{s.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{s.body}</p>
-                  {i < steps.length - 1 && (
-                    <DoodleArrow className="absolute -right-7 top-1/2 -translate-y-1/2 z-10 hidden md:block h-7 w-12 text-primary/45" />
-                  )}
-                </li>
-              ))}
-            </ol>
+            <Reveal>
+              <div className="max-w-xl mb-10">
+                <Eyebrow>How it works</Eyebrow>
+                <h2 className="font-display text-2xl md:text-3xl font-semibold tracking-[-0.01em] mt-4 mb-2">
+                  Three minutes to set up. Seconds per check after that.
+                </h2>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  SpendWise is built for the person who doesn&apos;t want a second job managing money — just a
+                  trustworthy answer when they need one.
+                </p>
+              </div>
+            </Reveal>
+            <RevealGroup>
+              <ol className="grid md:grid-cols-3 gap-4 list-none relative">
+                {steps.map((s, i) => (
+                  <li key={s.n} data-reveal className="relative rounded-xl border bg-card p-5">
+                    <span className="label-mono text-primary">{s.n}</span>
+                    <h3 className="text-sm font-semibold mt-2 mb-1">{s.title}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{s.body}</p>
+                    {i < steps.length - 1 && (
+                      <DoodleArrow className="absolute -right-7 top-1/2 -translate-y-1/2 z-10 hidden md:block h-7 w-12 text-primary/45" />
+                    )}
+                  </li>
+                ))}
+              </ol>
+            </RevealGroup>
           </div>
         </section>
 
         {/* ── The one number spotlight ─────────────────────── */}
         <section className="border-t relative overflow-hidden">
           <div className="absolute inset-0" aria-hidden="true">
-            <ContourField className="absolute -left-56 top-1/2 -translate-y-1/2 h-120 w-120 text-primary/10" />
+            <ScrollSpin className="absolute -left-56 top-1/2 -translate-y-1/2">
+              <ContourField className="h-120 w-120 text-primary/10" />
+            </ScrollSpin>
           </div>
           <div className="mx-auto max-w-5xl px-4 py-16 relative">
             <div className="grid lg:grid-cols-2 gap-10 items-center">
-              <div>
+              <Reveal>
                 <Eyebrow>
                   <Target className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
                   Answer-first design
@@ -244,11 +259,11 @@ export default async function MarketingPage() {
                     Recurring payments
                   </span>
                 </div>
-              </div>
-              <div className="relative">
+              </Reveal>
+              <Reveal x={32} delay={0.1} className="relative">
                 <div className="absolute -inset-4 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 rounded-2xl blur-xl" aria-hidden="true" />
                 <DashboardMockup />
-              </div>
+              </Reveal>
             </div>
           </div>
         </section>
@@ -257,25 +272,28 @@ export default async function MarketingPage() {
         <section id="features" className="border-t relative overflow-hidden scroll-mt-16">
           <PaperGrain />
           <div className="mx-auto max-w-5xl px-4 py-16 relative">
-            <div className="max-w-xl mb-10">
-              <Eyebrow>
-                <Sparkles className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
-                What&apos;s inside
-              </Eyebrow>
-              <h2 className="font-display text-2xl md:text-3xl font-semibold tracking-[-0.01em] mt-4 mb-2">
-                Small tool, sharp edges
-              </h2>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Every feature exists because a spreadsheet made someone do math they shouldn&apos;t have to.
-              </p>
-            </div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Reveal>
+              <div className="max-w-xl mb-10">
+                <Eyebrow>
+                  <Sparkles className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
+                  What&apos;s inside
+                </Eyebrow>
+                <h2 className="font-display text-2xl md:text-3xl font-semibold tracking-[-0.01em] mt-4 mb-2">
+                  Small tool, sharp edges
+                </h2>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Every feature exists because a spreadsheet made someone do math they shouldn&apos;t have to.
+                </p>
+              </div>
+            </Reveal>
+            <RevealGroup className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {features.map((feature) => {
                 const Icon = feature.icon;
                 const tone = toneStyles[feature.tone];
                 return (
                   <div
                     key={feature.title}
+                    data-reveal
                     className="group relative rounded-xl border bg-card p-6 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 overflow-hidden"
                   >
                     <div className={`absolute inset-0 bg-gradient-to-b ${tone.wash} to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300`} aria-hidden="true" />
@@ -289,7 +307,7 @@ export default async function MarketingPage() {
                   </div>
                 );
               })}
-            </div>
+            </RevealGroup>
           </div>
         </section>
 
@@ -300,8 +318,10 @@ export default async function MarketingPage() {
           <PaperGrain />
           <div className="mx-auto max-w-5xl px-4 py-16 relative">
             <div className="grid lg:grid-cols-[1fr_1.2fr] gap-10 items-start">
-              <div className="relative">
-                <HankoSeal className="absolute -top-4 -right-10 h-20 w-20 text-primary/25 hidden lg:block" />
+              <Reveal className="relative">
+                <Stamp className="absolute -top-4 -right-10 h-20 w-20 text-primary/25 hidden lg:block">
+                  <HankoSeal className="h-full w-full" />
+                </Stamp>
                 <Eyebrow>
                   <ShieldCheck className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
                   Your data
@@ -327,14 +347,14 @@ export default async function MarketingPage() {
                     </Button>
                   </Link>
                 </div>
-              </div>
-              <div className="rounded-xl border bg-card divide-y">
+              </Reveal>
+              <RevealGroup className="rounded-xl border bg-card divide-y">
                 {[
                   { icon: Lock, tone: "bg-primary/10 text-primary", t: "Stored", d: "Your name, email, currency preference, theme, and the transactions, budgets, categories, and subscriptions you create — in your own private account, isolated from every other account." },
                   { icon: Download, tone: "bg-muted text-muted-foreground", t: "Fetched", d: "Nothing about you. SpendWise never reaches into your bank, reads your statements, or pulls your data from anywhere. You type it in; that's the whole input." },
                   { icon: ShieldCheck, tone: "bg-destructive/10 text-destructive", t: "Never", d: "Bank connections, card numbers, account credentials, behavioral analytics, or tracking pixels. SpendWise works without ever seeing them." },
                 ].map((row) => (
-                  <div key={row.t} className="flex gap-3.5 p-5">
+                  <div key={row.t} data-reveal className="flex gap-3.5 p-5">
                     <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${row.tone}`}>
                       <row.icon className="h-4 w-4" aria-hidden="true" />
                     </span>
@@ -344,7 +364,7 @@ export default async function MarketingPage() {
                     </div>
                   </div>
                 ))}
-              </div>
+              </RevealGroup>
             </div>
           </div>
         </section>
@@ -353,25 +373,27 @@ export default async function MarketingPage() {
         <section className="border-t relative">
           <LedgerRules className="opacity-60" />
           <div className="mx-auto max-w-5xl px-4 py-16 relative">
-            <div className="flex items-end justify-between gap-4 mb-8">
-              <div>
-                <Eyebrow>Answers</Eyebrow>
-                <h2 className="font-display text-2xl md:text-3xl font-semibold tracking-[-0.01em] mt-4">
-                  Questions people ask first
-                </h2>
+            <Reveal>
+              <div className="flex items-end justify-between gap-4 mb-8">
+                <div>
+                  <Eyebrow>Answers</Eyebrow>
+                  <h2 className="font-display text-2xl md:text-3xl font-semibold tracking-[-0.01em] mt-4">
+                    Questions people ask first
+                  </h2>
+                </div>
+                <Link href="/faq" className="hidden sm:inline-flex text-sm text-primary hover:underline shrink-0 pb-1">
+                  All questions →
+                </Link>
               </div>
-              <Link href="/faq" className="hidden sm:inline-flex text-sm text-primary hover:underline shrink-0 pb-1">
-                All questions →
-              </Link>
-            </div>
-            <div className="grid gap-3">
+            </Reveal>
+            <RevealGroup className="grid gap-3">
               {faqPreview.map((item) => (
-                <div key={item.q} className="rounded-xl border bg-card p-5">
+                <div key={item.q} data-reveal className="rounded-xl border bg-card p-5">
                   <h3 className="text-sm font-semibold mb-1">{item.q}</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">{item.a}</p>
                 </div>
               ))}
-            </div>
+            </RevealGroup>
             <p className="mt-4 text-sm sm:hidden">
               <Link href="/faq" className="text-primary hover:underline">All questions →</Link>
             </p>
@@ -397,14 +419,17 @@ export default async function MarketingPage() {
           </div>
           <PaperGrain className="opacity-30 dark:opacity-20" />
           <div className="mx-auto max-w-5xl px-4 py-16 md:py-20 text-center relative">
-            <HankoSeal className="mx-auto mb-5 h-14 w-14 text-band-foreground/70" />
-            <h2 className="font-display text-3xl md:text-4xl font-semibold tracking-[-0.02em] mb-3">
-              Ready to take control?
-            </h2>
-            <p className="text-sm mb-7 max-w-md mx-auto leading-relaxed text-band-foreground/80">
-              Start with a clear view of your spending and build better habits one decision at a time.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <RevealGroup stagger={0.12}>
+              <Stamp className="mx-auto mb-5 w-fit">
+                <HankoSeal className="h-14 w-14 text-band-foreground/70" />
+              </Stamp>
+              <h2 data-reveal className="font-display text-3xl md:text-4xl font-semibold tracking-[-0.02em] mb-3">
+                Ready to take control?
+              </h2>
+              <p data-reveal className="text-sm mb-7 max-w-md mx-auto leading-relaxed text-band-foreground/80">
+                Start with a clear view of your spending and build better habits one decision at a time.
+              </p>
+              <div data-reveal className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link href={session ? "/dashboard" : "/register"}>
                 <Button size="lg" className="gap-1.5 text-sm font-medium bg-band-foreground text-band hover:bg-band-foreground/90 active:scale-[0.98] shadow-sm">
                   {session ? "Open Dashboard" : "Get Started Free"} <ArrowRight className="h-4 w-4" />
@@ -415,7 +440,8 @@ export default async function MarketingPage() {
                   Talk to support
                 </Button>
               </Link>
-            </div>
+              </div>
+            </RevealGroup>
           </div>
         </section>
       </main>

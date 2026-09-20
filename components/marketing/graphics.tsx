@@ -1,6 +1,7 @@
 import { useId } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { CountUp } from "@/components/marketing/scroll";
 
 /**
  * Hand-authored SVG graphics for the landing page — the "Kanso Ledger" world
@@ -283,7 +284,9 @@ export function ReceiptCard({ className }: { className?: string }) {
         </div>
         <div className="my-4 border-t border-dashed" />
         <p className="label-mono text-muted-foreground">Available this month</p>
-        <p className="mt-1 text-4xl font-semibold tabular-nums tracking-tight">$1,842.60</p>
+        <p className="mt-1 text-4xl font-semibold tracking-tight">
+          <CountUp value={1842.6} prefix="$" duration={1.6} />
+        </p>
         <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
           Income, minus what&apos;s gone, minus what&apos;s committed. No guessing.
         </p>
