@@ -85,7 +85,7 @@ export default function SupportPage() {
     >
 <div className={`grid gap-3 ${channels.length > 1 ? "sm:grid-cols-2 lg:grid-cols-3" : ""} mb-12`}>
           {channels.map((c) => (
-            <div key={c.title} className="flex flex-col rounded-xl border bg-card p-5">
+            <div key={c.title} className="flex flex-col rounded-xl border bg-card p-5 transition-all duration-300 hover:shadow-card-hover hover:-translate-y-0.5">
               <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 mb-3">
                 <c.icon className="h-5 w-5 text-primary" aria-hidden="true" />
               </span>

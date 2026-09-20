@@ -176,9 +176,14 @@ export function HankoSeal({ className }: { className?: string }) {
         <feTurbulence type="turbulence" baseFrequency="0.06" numOctaves="3" seed="2" result="t" />
         <feDisplacementMap in="SourceGraphic" in2="t" scale="3.6" />
       </filter>
-      <g filter={`url(#seal-${id})`}>
+      {/* The rings turn forever; the transform applies after the filter, so
+          the turbulence-bitten edges rotate with them and make the spin
+          readable. The "$" mark stays upright in its own filtered group. */}
+      <g filter={`url(#seal-${id})`} className="seal-spin">
         <circle cx="48" cy="48" r="41" fill="none" stroke="currentColor" strokeWidth="5" opacity="0.85" />
         <circle cx="48" cy="48" r="32" fill="none" stroke="currentColor" strokeWidth="1.4" opacity="0.7" />
+      </g>
+      <g filter={`url(#seal-${id})`}>
         <text
           x="48"
           y="61"
@@ -267,7 +272,7 @@ export function ReceiptCard({ className }: { className?: string }) {
       }}
     >
       <div
-        className="bg-card px-6 pb-9 pt-6"
+        className="bg-card px-6 pb-9 pt-6 text-card-foreground"
         style={{ clipPath: `polygon(${pts.join(", ")})` }}
       >
         <div className="flex items-baseline justify-between">

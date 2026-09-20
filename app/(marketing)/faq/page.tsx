@@ -113,7 +113,7 @@ export default function FaqPage() {
             </h2>
             <div className="space-y-2">
               {group.items.map((item) => (
-                <details key={item.q} className="group rounded-xl border bg-card">
+                <details key={item.q} className="group rounded-xl border bg-card transition-colors hover:border-primary/30 open:border-primary/40">
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-sm font-semibold [&::-webkit-details-marker]:hidden">
                     {item.q}
                     <ChevronDown

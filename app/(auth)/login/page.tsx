@@ -79,10 +79,11 @@ export default function LoginPage() {
   }
 
   return (
-    <Card className="w-full max-w-[420px] mx-4 shadow-dialog rounded-xl">
-      <CardContent className="p-6 pt-8">
+    <Card className="relative w-full max-w-[420px] overflow-hidden shadow-dialog rounded-xl">
+      <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary/70 via-primary/25 to-transparent" />
+      <CardContent className="p-6 pt-9">
         <div className="text-center mb-6">
-          <Link href="/" className="inline-flex items-center gap-2 font-display font-semibold text-base tracking-tight mb-4">
+          <Link href="/" className="mb-4 inline-flex items-center gap-2 font-display text-base font-semibold tracking-tight lg:hidden">
             <Image src="/icon.png" alt="SpendWise logo" width={30} height={30} className="rounded-lg bg-white p-1 ring-1 ring-black/5" />
             <span>SpendWise</span>
           </Link>
