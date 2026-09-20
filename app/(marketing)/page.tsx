@@ -1,245 +1,260 @@
 import Link from "next/link";
-import { ArrowRight, BarChart3, Coins, CreditCard, DollarSign, Music, PiggyBank, RefreshCcw, Rocket, Shield, ShoppingCart, Sparkles, Target, TrendingUp, TrendingDown, Zap } from "lucide-react";
+import {
+  ArrowRight, BarChart3, CreditCard, Download, FileText, Lock,
+  PiggyBank, RefreshCcw, ShieldCheck, Sparkles, Target, Unlink, Wallet,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { auth } from "@/lib/auth";
+import {
+  DashboardMockup, DotGrid, Eyebrow, GradientOrb,
+} from "@/components/marketing/visuals";
+import { SiteFooter, SiteHeader } from "@/components/marketing/chrome";
 
-const features = [
+type Tone = "primary" | "spend" | "success" | "warning";
+
+/* One color, one meaning (DESIGN.md's semantic roles, read off the product):
+   primary = the product's word · spend (slate) = money leaving ·
+   success (moss) = money you keep · warning (amber) = honest limits. */
+const toneStyles: Record<Tone, { tile: string; wash: string }> = {
+  primary: { tile: "bg-primary/10 text-primary group-hover:bg-primary/20", wash: "from-primary/10" },
+  spend: { tile: "bg-spend/10 text-spend group-hover:bg-spend/20", wash: "from-spend/10" },
+  success: { tile: "bg-success/10 text-success group-hover:bg-success/20", wash: "from-success/10" },
+  warning: { tile: "bg-warning/15 text-warning group-hover:bg-warning/25", wash: "from-warning/10" },
+};
+
+const features: { icon: typeof Unlink; tone: Tone; title: string; description: string }[] = [
   {
-    icon: CreditCard,
-    title: "Track Expenses",
-    description: "Log expenses in seconds with smart categorization and tags.",
-    color: "from-emerald-400/20 to-emerald-500/5",
+    icon: Unlink,
+    tone: "primary",
+    title: "No bank connections. Ever.",
+    description:
+      "You log what you spend — nothing else touches your accounts. No bank connections, no credentials, no data to monetize. Manual entry isn't a limitation; it's the privacy model.",
   },
   {
-    icon: RefreshCcw,
-    title: "Manage Subscriptions",
-    description: "Track recurring payments and never miss a renewal again.",
-    color: "from-blue-400/20 to-blue-500/5",
+    icon: CreditCard,
+    tone: "spend",
+    title: "Fast expense tracking",
+    description:
+      "Log an expense in seconds. Descriptions autocomplete from your history, categories carry color, and 'keep adding' makes receipts a batch job.",
+  },
+  {
+    icon: Wallet,
+    tone: "success",
+    title: "The one number",
+    description:
+      "The dashboard opens with what you can actually spend this month — income minus what's gone and what's committed — not a wall of vanity stats.",
   },
   {
     icon: PiggyBank,
-    title: "Set Budgets",
-    description: "Create weekly, monthly, or yearly budgets and track progress.",
-    color: "from-violet-400/20 to-violet-500/5",
+    tone: "warning",
+    title: "Budgets that tell the truth",
+    description:
+      "Weekly, monthly, or yearly limits per category. Over budget, the bar says 128% — not a flat, polite 100%.",
+  },
+  {
+    icon: RefreshCcw,
+    tone: "spend",
+    title: "Subscription radar",
+    description:
+      "Track recurring payments with per-month and per-year normalization, pause what's dormant, and get flagged before renewals hit.",
   },
   {
     icon: BarChart3,
-    title: "Visual Analytics",
-    description: "Beautiful charts and insights into your spending habits.",
-    color: "from-amber-400/20 to-amber-500/5",
-  },
-  {
-    icon: Shield,
-    title: "Private by design",
-    description: "Keep your financial picture organized in one focused, personal workspace.",
-    color: "from-rose-400/20 to-rose-500/5",
+    tone: "primary",
+    title: "Reports & PDF export",
+    description:
+      "Slice spending by month or any date range, see where it concentrates, and export a clean PDF report for your own records.",
   },
 ];
 
-function DotGrid({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <pattern id="dot-grid" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
-          <circle cx="2" cy="2" r="1" fill="currentColor" opacity="0.15" />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#dot-grid)" />
-    </svg>
-  );
-}
+const steps = [
+  {
+    n: "01",
+    title: "Create your space",
+    body: "Sign up with email (or Google). No bank to link, no card to hand over — the workspace is yours from the first second.",
+  },
+  {
+    n: "02",
+    title: "Log what you spend",
+    body: "Record transactions, set your budgets, and list the subscriptions quietly billing you every month.",
+  },
+  {
+    n: "03",
+    title: "Check, don't calculate",
+    body: "Your 'Available this month' number is waiting on the dashboard, with alerts only when something needs you.",
+  },
+];
 
-function GradientOrb({ className, color }: { className?: string; color: string }) {
-  return (
-    <svg className={className} viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <radialGradient id={`orb-${color.replace(/\W/g, "")}`} cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor={color} stopOpacity="0.25" />
-          <stop offset="100%" stopColor={color} stopOpacity="0" />
-        </radialGradient>
-      </defs>
-      <circle cx="200" cy="200" r="200" fill={`url(#orb-${color.replace(/\W/g, "")})`} />
-    </svg>
-  );
-}
+const faqPreview = [
+  {
+    q: "Is my financial data private?",
+    a: "Yes. Your ledger lives in your own private account, isolated from every other account. SpendWise runs no analytics, no trackers, and never sells or shares what you enter.",
+  },
+  {
+    q: "Do I have to link my bank?",
+    a: "No — and you can't. SpendWise has no bank sync, no card linking, and no account credentials of any kind. You enter transactions yourself, which is exactly why there's nothing here to leak or sell.",
+  },
+  {
+    q: "What happens if I delete something by mistake?",
+    a: "Deletes of transactions, budgets, and subscriptions offer a 5-second Undo right in the toast. No confirm dialogs standing between you and a reversible action.",
+  },
+];
 
-function DashboardMockup() {
-  const rows = [
-    { icon: ShoppingCart, name: "Grocery Store", cat: "Food", date: "Today", amount: "-$84.50", expense: true },
-    { icon: Zap, name: "Electric Bill", cat: "Utilities", date: "Yesterday", amount: "-$145.00", expense: true },
-    { icon: Music, name: "Spotify", cat: "Subscription", date: "Jun 12", amount: "-$9.99", expense: true },
-    { icon: Coins, name: "Freelance Pay", cat: "Income", date: "Jun 10", amount: "+$1,200", expense: false },
-  ];
-  return (
-    <div className="rounded-2xl border bg-card shadow-dialog overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2.5 border-b bg-muted/20">
-        <div className="flex items-center gap-2">
-          <div className="flex h-5 w-5 items-center justify-center rounded bg-primary/10">
-            <DollarSign className="h-3 w-3 text-primary" />
-          </div>
-          <span className="text-xs font-medium">Overview</span>
-        </div>
-        <div className="flex gap-1.5">
-          <div className="h-2 w-2 rounded-full bg-rose-400" />
-          <div className="h-2 w-2 rounded-full bg-amber-400" />
-          <div className="h-2 w-2 rounded-full bg-emerald-400" />
-        </div>
-      </div>
-      <div className="grid grid-cols-3 gap-2 p-3 border-b">
-        {[
-          { label: "Income", value: "$4,280", color: "text-emerald-600", change: "+12%" },
-          { label: "Expenses", value: "$2,150", color: "text-rose-500", change: "+8%" },
-          { label: "Savings", value: "$2,130", color: "text-primary", change: "50%" },
-        ].map((s) => (
-          <div key={s.label} className="rounded-lg bg-muted/30 p-2.5">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{s.label}</p>
-            <p className={`text-xs font-semibold mt-0.5 ${s.color}`}>{s.value}</p>
-          </div>
-        ))}
-      </div>
-      <div className="p-3 space-y-1.5">
-        {rows.map((r) => (
-          <div key={r.name} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-muted/30 transition-colors">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-muted flex-shrink-0">
-                <r.icon className="h-3 w-3" aria-hidden="true" />
-              </span>
-              <div className="min-w-0">
-                <p className="text-xs font-medium truncate">{r.name}</p>
-                <p className="text-[10px] text-muted-foreground">{r.cat} &middot; {r.date}</p>
-              </div>
-            </div>
-            <span className={`text-xs font-medium flex-shrink-0 ml-2 ${!r.expense ? "text-emerald-600" : ""}`}>{r.amount}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-export default function MarketingPage() {
+export default async function MarketingPage() {
+  const session = await auth();
   return (
     <div className="flex flex-col min-h-screen">
-      <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md">
-        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
-          <Link href="/" className="flex items-center gap-2 font-semibold text-sm">
-            <span className="flex h-6 w-6 items-center justify-center rounded bg-primary text-primary-foreground text-xs font-bold">$</span>
-            <span>SpendWise</span>
-          </Link>
-          <nav className="flex items-center gap-3">
-            <Link href="/login">
-              <Button variant="ghost" size="sm">Sign In</Button>
-            </Link>
-            <Link href="/register">
-              <Button size="sm">Get Started</Button>
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <SiteHeader session={session} />
 
       <main className="flex-1">
+        {/* ── Hero ────────────────────────────────────────── */}
         <section className="relative overflow-hidden">
-          <div className="absolute inset-0 pointer-events-none">
-            <DotGrid className="w-full h-full text-border" />
+          <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+            <DotGrid className="w-full h-full text-primary/60" />
             <div className="absolute -top-40 -right-40 w-96 h-96">
-              <GradientOrb color="#00a86b" />
+              <GradientOrb color="#1f9d63" />
             </div>
             <div className="absolute -bottom-40 -left-40 w-80 h-80">
-              <GradientOrb color="#00d98b" />
-            </div>
-            <div className="absolute top-1/4 left-1/3 w-20 h-20 opacity-[0.03]">
-              <svg viewBox="0 0 100 100" fill="currentColor" className="text-foreground">
-                <text x="0" y="80" fontSize="80" fontWeight="bold">$</text>
-              </svg>
-            </div>
-            <div className="absolute bottom-1/3 right-1/4 w-16 h-16 opacity-[0.03]">
-              <svg viewBox="0 0 100 100" fill="currentColor" className="text-foreground">
-                <text x="0" y="80" fontSize="70" fontWeight="bold">+</text>
-              </svg>
+              <GradientOrb color="#35b57d" />
             </div>
           </div>
           <div className="mx-auto max-w-5xl px-4 py-20 md:py-28 relative">
             <div className="mx-auto max-w-3xl text-center">
-              <div className="inline-flex items-center rounded-full border bg-muted/50 px-3 py-1 text-xs font-medium mb-6 backdrop-blur-sm">
-                A calmer way to manage everyday money
-              </div>
-              <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.05] mb-4">
+              <Eyebrow>A calmer way to manage everyday money</Eyebrow>
+              <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-semibold tracking-[-0.02em] leading-[1.02] mb-4 mt-6">
                 Know where your money goes.
                 <span className="text-primary"> Plan what comes next.</span>
               </h1>
               <p className="text-lg text-muted-foreground max-w-xl mx-auto mb-8 leading-relaxed">
-                SpendWise brings spending, recurring payments, budgets, and useful context into one clear view.
+                SpendWise brings spending, recurring payments, budgets, and useful context into one clear view —
+                so the question &ldquo;can I afford this?&rdquo; has an instant answer.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Link href="/register">
-                  <Button size="lg" className="gap-1.5 text-sm font-medium shadow-sm">
-                    Start Free <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </Link>
-                <Link href="/login">
-                  <Button size="lg" variant="outline" className="text-sm font-medium">
-                    Sign In
-                  </Button>
-                </Link>
+                {session ? (
+                  <Link href="/dashboard">
+                    <Button size="lg" className="gap-1.5 text-sm font-medium shadow-sm">
+                      Go to Dashboard <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                ) : (
+                  <>
+                    <Link href="/register">
+                      <Button size="lg" className="gap-1.5 text-sm font-medium shadow-sm">
+                        Start Free <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                    <Link href="/login">
+                      <Button size="lg" variant="outline" className="text-sm font-medium">
+                        Sign In
+                      </Button>
+                    </Link>
+                  </>
+                )}
               </div>
+              <p className="mt-4 text-xs text-muted-foreground">
+                No bank logins &middot; no trackers &middot; no data sale &middot; your ledger stays yours
+              </p>
             </div>
           </div>
         </section>
 
+        {/* ── How it works ─────────────────────────────────── */}
+        <section id="how" className="border-t scroll-mt-16">
+          <div className="mx-auto max-w-5xl px-4 py-16">
+            <div className="max-w-xl mb-10">
+              <Eyebrow>How it works</Eyebrow>
+              <h2 className="font-display text-2xl md:text-3xl font-semibold tracking-[-0.01em] mt-4 mb-2">
+                Three minutes to set up. Seconds per check after that.
+              </h2>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                SpendWise is built for the person who doesn&apos;t want a second job managing money — just a
+                trustworthy answer when they need one.
+              </p>
+            </div>
+            <ol className="grid md:grid-cols-3 gap-4 list-none">
+              {steps.map((s) => (
+                <li key={s.n} className="relative rounded-xl border bg-card p-5">
+                  <span className="label-mono text-primary">{s.n}</span>
+                  <h3 className="text-sm font-semibold mt-2 mb-1">{s.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{s.body}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        {/* ── The one number spotlight ─────────────────────── */}
         <section className="border-t relative">
           <div className="mx-auto max-w-5xl px-4 py-16">
             <div className="grid lg:grid-cols-2 gap-10 items-center">
               <div>
-                <div className="inline-flex items-center rounded-full border bg-muted/50 px-3 py-1 text-xs font-medium mb-4">
-                  <Rocket className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
-                  See it in action
-                </div>
-                <h2 className="text-xl font-semibold mb-2">Everything at a glance</h2>
+                <Eyebrow>
+                  <Target className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
+                  Answer-first design
+                </Eyebrow>
+                <h2 className="font-display text-2xl md:text-3xl font-semibold tracking-[-0.01em] mt-4 mb-2">
+                  Everything at a glance
+                </h2>
                 <p className="text-sm text-muted-foreground leading-relaxed mb-6">
-                  Your financial dashboard shows income, expenses, recent transactions, and budget progress
-                  in one clean view. No clutter, no confusion.
+                  Most finance apps hand you four stat cards and leave you to do the arithmetic. SpendWise does
+                  the arithmetic: one honest number — what&apos;s left to spend — with income, spending, and
+                  recurring commitments drawn to scale beneath it. Alerts appear only when something is actually
+                  actionable: a budget crossed, a renewal two days out.
                 </p>
-                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                  <span className="rounded-full border bg-card px-3 py-1.5">Income and expenses</span>
-                  <span className="rounded-full border bg-card px-3 py-1.5">Budgets and goals</span>
-                  <span className="rounded-full border bg-card px-3 py-1.5">Recurring payments</span>
+                <div className="flex flex-wrap gap-2 text-xs">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1.5 text-muted-foreground">
+                    <span className="flex shrink-0" aria-hidden="true">
+                      <span className="h-1.5 w-1.5 rounded-full bg-success" />
+                      <span className="-ml-0.5 h-1.5 w-1.5 rounded-full bg-spend" />
+                    </span>
+                    Income &amp; expenses
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1.5 text-muted-foreground">
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-warning" aria-hidden="true" />
+                    Budgets &amp; goals
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1.5 text-muted-foreground">
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-spend" aria-hidden="true" />
+                    Recurring payments
+                  </span>
                 </div>
               </div>
               <div className="relative">
-                <div className="absolute -inset-4 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 rounded-2xl blur-xl" />
+                <div className="absolute -inset-4 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 rounded-2xl blur-xl" aria-hidden="true" />
                 <DashboardMockup />
               </div>
             </div>
           </div>
         </section>
 
-        <section className="border-t relative overflow-hidden">
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-0 left-1/4 w-px h-full bg-border/30" />
-            <div className="absolute top-0 right-1/4 w-px h-full bg-border/30" />
-          </div>
+        {/* ── Features ─────────────────────────────────────── */}
+        <section id="features" className="border-t relative overflow-hidden scroll-mt-16">
           <div className="mx-auto max-w-5xl px-4 py-16">
-            <div className="text-center mb-12">
-              <div className="inline-flex items-center rounded-full border bg-muted/50 px-3 py-1 text-xs font-medium mb-4">
+            <div className="max-w-xl mb-10">
+              <Eyebrow>
                 <Sparkles className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
-                Powerful features
-              </div>
-              <h2 className="text-lg font-semibold mb-2">Everything you need to manage your money</h2>
-              <p className="text-sm text-muted-foreground max-w-xl mx-auto">
-                Powerful features to help you understand and optimize your spending.
+                What&apos;s inside
+              </Eyebrow>
+              <h2 className="font-display text-2xl md:text-3xl font-semibold tracking-[-0.01em] mt-4 mb-2">
+                Small tool, sharp edges
+              </h2>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Every feature exists because a spreadsheet made someone do math they shouldn&apos;t have to.
               </p>
             </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {features.map((feature) => {
                 const Icon = feature.icon;
+                const tone = toneStyles[feature.tone];
                 return (
                   <div
                     key={feature.title}
                     className="group relative rounded-xl border bg-card p-6 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 overflow-hidden"
                   >
-                    <div className={`absolute inset-0 bg-gradient-to-b ${feature.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+                    <div className={`absolute inset-0 bg-gradient-to-b ${tone.wash} to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300`} aria-hidden="true" />
                     <div className="relative">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 mb-3 group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
-                        <Icon className="h-5 w-5 text-primary" />
+                      <div className={`flex h-12 w-12 items-center justify-center rounded-xl mb-3 group-hover:scale-110 transition-all duration-300 ${tone.tile}`}>
+                        <Icon className="h-5 w-5" />
                       </div>
                       <h3 className="text-base font-semibold mb-1">{feature.title}</h3>
                       <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
@@ -251,42 +266,124 @@ export default function MarketingPage() {
           </div>
         </section>
 
-        <section className="border-t relative overflow-hidden">
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute -top-20 -right-20 w-64 h-64">
-              <GradientOrb color="#00a86b" />
-            </div>
-            <div className="absolute -bottom-20 -left-20 w-48 h-48">
-              <GradientOrb color="#00d98b" />
+        {/* ── Privacy ──────────────────────────────────────── */}
+        <section id="privacy" className="border-t bg-wash-moss scroll-mt-16">
+          <div className="mx-auto max-w-5xl px-4 py-16">
+            <div className="grid lg:grid-cols-[1fr_1.2fr] gap-10 items-start">
+              <div>
+                <Eyebrow>
+                  <ShieldCheck className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
+                  Your data
+                </Eyebrow>
+                <h2 className="font-display text-2xl md:text-3xl font-semibold tracking-[-0.01em] mt-4 mb-2">
+                  A private ledger, not a data product
+                </h2>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                  SpendWise is personal finance software, not a fintech funnel. There&apos;s no ad network,
+                  no analytics script, and no third party reading your transactions. Your spending is the
+                  product&apos;s only input — and nobody else&apos;s output.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Link href="/privacy">
+                    <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+                      <FileText className="h-3.5 w-3.5" aria-hidden="true" />
+                      Read the Privacy Policy
+                    </Button>
+                  </Link>
+                  <Link href="/faq">
+                    <Button variant="ghost" size="sm" className="text-xs">
+                      More questions →
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+              <div className="rounded-xl border bg-card divide-y">
+                {[
+                  { icon: Lock, tone: "bg-primary/10 text-primary", t: "Stored", d: "Your name, email, currency preference, theme, and the transactions, budgets, categories, and subscriptions you create — in your own private account, isolated from every other account." },
+                  { icon: Download, tone: "bg-muted text-muted-foreground", t: "Fetched", d: "Nothing about you. SpendWise never reaches into your bank, reads your statements, or pulls your data from anywhere. You type it in; that's the whole input." },
+                  { icon: ShieldCheck, tone: "bg-destructive/10 text-destructive", t: "Never", d: "Bank connections, card numbers, account credentials, behavioral analytics, or tracking pixels. SpendWise works without ever seeing them." },
+                ].map((row) => (
+                  <div key={row.t} className="flex gap-3.5 p-5">
+                    <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${row.tone}`}>
+                      <row.icon className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                    <div>
+                      <h3 className="text-sm font-semibold">{row.t}</h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed mt-0.5">{row.d}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-          <div className="mx-auto max-w-5xl px-4 py-16 text-center relative">
-            <div className="inline-flex items-center rounded-full border bg-muted/50 px-3 py-1 text-xs font-medium mb-4 backdrop-blur-sm">
-              <Target className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
-              Get started today
+        </section>
+
+        {/* ── FAQ preview ──────────────────────────────────── */}
+        <section className="border-t">
+          <div className="mx-auto max-w-5xl px-4 py-16">
+            <div className="flex items-end justify-between gap-4 mb-8">
+              <div>
+                <Eyebrow>Answers</Eyebrow>
+                <h2 className="font-display text-2xl md:text-3xl font-semibold tracking-[-0.01em] mt-4">
+                  Questions people ask first
+                </h2>
+              </div>
+              <Link href="/faq" className="hidden sm:inline-flex text-sm text-primary hover:underline shrink-0 pb-1">
+                All questions →
+              </Link>
             </div>
-            <h2 className="text-lg font-semibold mb-2">Ready to take control?</h2>
-            <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
+            <div className="grid gap-3">
+              {faqPreview.map((item) => (
+                <div key={item.q} className="rounded-xl border bg-card p-5">
+                  <h3 className="text-sm font-semibold mb-1">{item.q}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{item.a}</p>
+                </div>
+              ))}
+            </div>
+            <p className="mt-4 text-sm sm:hidden">
+              <Link href="/faq" className="text-primary hover:underline">All questions →</Link>
+            </p>
+          </div>
+        </section>
+
+        {/* ── Final CTA ────────────────────────────────────── */}
+        {/* The one committed green region: the whole surface IS the brand, so
+            the closing ask reads as the page's loudest moment. Inverted
+            controls keep the primary action the brightest thing on screen. */}
+        <section className="relative overflow-hidden bg-band text-band-foreground">
+          <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+            <DotGrid className="w-full h-full text-band-foreground/50" />
+            <div className="absolute -top-24 -right-24 w-72 h-72">
+              <GradientOrb color="#7fe3b3" />
+            </div>
+            <div className="absolute -bottom-24 -left-24 w-60 h-60">
+              <GradientOrb color="#4ecf94" />
+            </div>
+          </div>
+          <div className="mx-auto max-w-5xl px-4 py-16 md:py-20 text-center relative">
+            <h2 className="font-display text-3xl md:text-4xl font-semibold tracking-[-0.02em] mb-3">
+              Ready to take control?
+            </h2>
+            <p className="text-sm mb-7 max-w-md mx-auto leading-relaxed text-band-foreground/80">
               Start with a clear view of your spending and build better habits one decision at a time.
             </p>
-            <Link href="/register">
-              <Button size="lg" className="gap-1.5 text-sm font-medium shadow-sm">
-                Get Started Free <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link href={session ? "/dashboard" : "/register"}>
+                <Button size="lg" className="gap-1.5 text-sm font-medium bg-band-foreground text-band hover:bg-band-foreground/90 active:scale-[0.98] shadow-sm">
+                  {session ? "Open Dashboard" : "Get Started Free"} <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+              <Link href="/support">
+                <Button size="lg" variant="outline" className="text-sm font-medium border-band-foreground/40 bg-transparent text-band-foreground hover:bg-band-foreground/10 hover:text-band-foreground">
+                  Talk to support
+                </Button>
+              </Link>
+            </div>
           </div>
         </section>
       </main>
 
-      <footer className="border-t py-6">
-        <div className="mx-auto max-w-5xl px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} SpendWise. All rights reserved.</p>
-          <div className="flex items-center gap-4">
-            <span>Privacy-first workspace</span>
-            <span>Personal use</span>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

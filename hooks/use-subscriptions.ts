@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { readableError } from "@/lib/api-error";
 
 export type Subscription = {
   id: string;
@@ -9,7 +10,6 @@ export type Subscription = {
   description: string | null;
   amount: number;
   currency: string;
-  amountInPreferred: number | null;
   billingCycle: "weekly" | "monthly" | "quarterly" | "yearly" | "custom";
   billingInterval: number;
   categoryId: string | null;
@@ -28,7 +28,6 @@ export type SubscriptionInput = {
   description?: string | null;
   amount: number;
   currency?: string;
-  amountInPreferred?: number;
   billingCycle: "weekly" | "monthly" | "quarterly" | "yearly" | "custom";
   billingInterval?: number;
   categoryId?: string | null;
@@ -48,7 +47,6 @@ type RawSubscription = {
   description: string | null;
   amount: number;
   currency: string;
-  amount_in_preferred: number | null;
   billing_cycle: "weekly" | "monthly" | "quarterly" | "yearly" | "custom";
   billing_interval: number | null;
   category_id: string | null;
@@ -72,7 +70,6 @@ function mapSubscription(raw: RawSubscription): Subscription {
     description: raw.description,
     amount: raw.amount,
     currency: raw.currency,
-    amountInPreferred: raw.amount_in_preferred,
     billingCycle: raw.billing_cycle,
     billingInterval: raw.billing_interval ?? 1,
     categoryId: raw.category_id,
@@ -100,8 +97,7 @@ async function createSubscription(data: SubscriptionInput): Promise<Subscription
     body: JSON.stringify(data),
   });
   if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error || "Failed to create subscription");
+    throw new Error(await readableError(res, "Couldn't save the subscription. Check the amount and dates, then try again."));
   }
   return mapSubscription(await res.json());
 }
@@ -113,8 +109,7 @@ async function updateSubscription(id: string, data: Partial<SubscriptionInput>):
     body: JSON.stringify(data),
   });
   if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error || "Failed to update subscription");
+    throw new Error(await readableError(res, "Couldn't update the subscription. Check the amount and dates, then try again."));
   }
   return mapSubscription(await res.json());
 }
@@ -122,9 +117,33 @@ async function updateSubscription(id: string, data: Partial<SubscriptionInput>):
 async function deleteSubscription(id: string): Promise<void> {
   const res = await fetch(`/api/subscriptions/${id}`, { method: "DELETE" });
   if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error || "Failed to delete subscription");
+    throw new Error(await readableError(res, "Couldn't delete the subscription."));
   }
+}
+
+/** Re-creates a deleted subscription exactly as stored (used by Undo); no toast. */
+async function restoreSubscription(s: Subscription): Promise<void> {
+  const res = await fetch("/api/subscriptions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: s.name,
+      provider: s.provider,
+      description: s.description,
+      amount: s.amount,
+      currency: s.currency,
+      billingCycle: s.billingCycle,
+      billingInterval: s.billingInterval,
+      categoryId: s.categoryId,
+      startDate: s.startDate,
+      nextBillingDate: s.nextBillingDate,
+      endDate: s.endDate,
+      status: s.status,
+      logo: s.logo,
+      notes: s.notes,
+    }),
+  });
+  if (!res.ok) throw new Error("Undo failed");
 }
 
 export function useSubscriptions() {
@@ -156,13 +175,29 @@ export function useUpdateSubscription() {
   });
 }
 
+/** Deletes with a 5s Undo, mirroring the transaction delete flow. */
 export function useDeleteSubscription() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: deleteSubscription,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["subscriptions"] });
-      toast.success("Subscription deleted");
+    mutationFn: (sub: Subscription) => deleteSubscription(sub.id),
+    onSuccess: (_data, sub) => {
+      const invalidate = () => qc.invalidateQueries({ queryKey: ["subscriptions"] });
+      toast.success(`${sub.name} deleted`, {
+        action: {
+          label: "Undo",
+          onClick: async () => {
+            try {
+              await restoreSubscription(sub);
+              invalidate();
+              toast.success("Subscription restored");
+            } catch {
+              toast.error("Couldn't undo — the subscription was not restored.");
+            }
+          },
+        },
+        duration: 5000,
+      });
+      invalidate();
     },
     onError: (err: Error) => toast.error(err.message),
   });

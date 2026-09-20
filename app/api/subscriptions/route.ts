@@ -10,7 +10,6 @@ const createSchema = z.object({
   description: z.string().optional().nullable(),
   amount: z.number().finite().positive(),
   currency: z.string().length(3).optional(),
-  amountInPreferred: z.number().optional().nullable(),
   billingCycle: z.enum(["weekly", "monthly", "quarterly", "yearly", "custom"]),
   billingInterval: z.number().optional(),
   categoryId: z.string().optional().nullable(),
@@ -54,7 +53,7 @@ export async function POST(request: Request) {
     }
 
     const {
-      name, provider, description, amount, currency, amountInPreferred,
+      name, provider, description, amount, currency,
       billingCycle, billingInterval, categoryId, startDate, nextBillingDate,
       endDate, status, logo, notes,
     } = parsed.data;
@@ -70,7 +69,6 @@ export async function POST(request: Request) {
         description: description ?? null,
         amount,
         currency: currency ?? "USD",
-        amount_in_preferred: amountInPreferred ?? null,
         billing_cycle: billingCycle,
         billing_interval: billingInterval ?? 1,
         category_id: categoryId ?? null,

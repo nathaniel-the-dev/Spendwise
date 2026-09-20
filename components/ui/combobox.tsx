@@ -39,6 +39,20 @@ export function Combobox({
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const searchRef = React.useRef<HTMLInputElement>(null);
+  const triggerRef = React.useRef<HTMLButtonElement>(null);
+
+  // When a Combobox lives inside a modal Radix Dialog, portal the popover into
+  // the dialog's own content node ([role="dialog"]) rather than document.body.
+  // This keeps the popover within the dialog's FocusScope (so the search input
+  // can receive focus instead of being yanked back to the trigger) and makes
+  // clicks inside the popover count as "inside the dialog" (so it doesn't
+  // dismiss). Falls back to body when not inside a dialog.
+  const [portalContainer, setPortalContainer] = React.useState<HTMLElement | null>(null);
+  React.useEffect(() => {
+    if (!open) return;
+    const dialog = triggerRef.current?.closest('[role="dialog"]');
+    setPortalContainer((dialog as HTMLElement) ?? null);
+  }, [open]);
 
   const selected = options.find((o) => o.value === value);
 
@@ -70,6 +84,7 @@ export function Combobox({
     <Popover.Root open={open && !disabled} onOpenChange={setOpen}>
       <Popover.Trigger asChild>
         <button
+          ref={triggerRef}
           type="button"
           id={id}
           role="combobox"
@@ -77,10 +92,10 @@ export function Combobox({
           aria-haspopup="listbox"
           disabled={disabled}
           className={cn(
-            "flex h-9 w-full items-center justify-between gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors",
-            "placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+            "flex h-11 w-full items-center justify-between gap-2 rounded-xl border border-input bg-transparent px-3.5 py-2 text-sm shadow-sm transition-colors",
+            "placeholder:text-muted-foreground/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
             "disabled:cursor-not-allowed disabled:opacity-50",
-            "data-[state=open]:ring-1 data-[state=open]:ring-ring",
+            "data-[state=open]:ring-2 data-[state=open]:ring-ring",
             triggerClassName
           )}
         >
@@ -91,12 +106,15 @@ export function Combobox({
         </button>
       </Popover.Trigger>
 
-      <Popover.Portal>
+      <Popover.Portal container={portalContainer ?? undefined}>
         <Popover.Content
           align="start"
           sideOffset={4}
           className={cn(
-            "z-50 min-w-(--radix-popover-trigger-width) overflow-hidden rounded-md border bg-popover p-1.5 text-popover-foreground shadow-md outline-none",
+            // A modal Radix Dialog sets `pointer-events: none` on document.body;
+            // this portalled content must opt back in or clicks fall through to
+            // the dialog underneath (e.g. CurrencySelect inside form dialogs).
+            "z-50 min-w-(--radix-popover-trigger-width) overflow-hidden rounded-md border bg-popover p-1.5 text-popover-foreground shadow-md outline-none pointer-events-auto",
             contentClassName
           )}
         >

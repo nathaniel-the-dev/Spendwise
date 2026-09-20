@@ -6,7 +6,6 @@ import { z } from "zod";
 const updateSchema = z.object({
   amount: z.number().finite().positive().optional(),
   currency: z.string().length(3).optional(),
-  amountInPreferred: z.number().optional().nullable(),
   description: z.string().min(1).optional(),
   date: z.string().optional(),
   type: z.enum(["expense", "income"]).optional(),
@@ -77,7 +76,6 @@ export async function PATCH(
 
     if (parsed.data.amount !== undefined) updateData.amount = parsed.data.amount;
     if (parsed.data.currency !== undefined) updateData.currency = parsed.data.currency;
-    if (parsed.data.amountInPreferred !== undefined) updateData.amount_in_preferred = parsed.data.amountInPreferred;
     if (parsed.data.description !== undefined) updateData.description = parsed.data.description;
     if (parsed.data.date !== undefined) updateData.date = parsed.data.date;
     if (parsed.data.type !== undefined) updateData.type = parsed.data.type;

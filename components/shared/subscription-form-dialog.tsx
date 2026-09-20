@@ -22,22 +22,27 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useCategories } from "@/hooks/use-categories";
-import { currencies } from "@/lib/utils";
-import { useEffect } from "react";
+import { CategorySelect } from "@/components/shared/category-select";
+import { useEffect, useState } from "react";
 
-const subscriptionSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  provider: z.string().optional(),
-  amount: z.coerce.number().positive("Amount must be positive"),
-  currency: z.string().length(3).optional(),
-  billingCycle: z.enum(["weekly", "monthly", "quarterly", "yearly", "custom"]),
-  billingInterval: z.coerce.number().int().positive().optional(),
-  categoryId: z.string().optional(),
-  startDate: z.string().min(1, "Start date is required"),
-  nextBillingDate: z.string().min(1, "Next billing date is required"),
-  endDate: z.string().optional(),
-  notes: z.string().optional(),
-});
+const subscriptionSchema = z
+  .object({
+    name: z.string().min(1, "Name is required"),
+    provider: z.string().optional(),
+    amount: z.coerce.number().positive("Amount must be positive"),
+    billingCycle: z.enum(["weekly", "monthly", "quarterly", "yearly", "custom"]),
+    billingInterval: z.coerce.number().int().positive().optional(),
+    categoryId: z.string().optional(),
+    startDate: z.string().min(1, "Start date is required"),
+    nextBillingDate: z.string().min(1, "Next billing date is required"),
+    endDate: z.string().optional(),
+    status: z.enum(["active", "paused", "cancelled"]).optional(),
+    notes: z.string().optional(),
+  })
+  .refine((d) => !d.endDate || new Date(d.endDate) >= new Date(d.startDate), {
+    message: "End date must be on or after the start date",
+    path: ["endDate"],
+  });
 
 export type SubscriptionFormValues = z.infer<typeof subscriptionSchema>;
 
@@ -57,19 +62,21 @@ export function SubscriptionFormDialog({
   title = "Add Subscription",
 }: Props) {
   const { data: categories } = useCategories();
+  const isEdit = Boolean(defaultValues?.name);
+  const [showMore, setShowMore] = useState(false);
   const form = useForm<SubscriptionFormValues>({
     resolver: zodResolver(subscriptionSchema),
     defaultValues: {
       name: "",
       provider: "",
       amount: 0,
-      currency: "USD",
       billingCycle: "monthly",
       billingInterval: 1,
       categoryId: "",
       startDate: new Date().toISOString().split("T")[0],
       nextBillingDate: "",
       endDate: "",
+      status: "active",
       notes: "",
       ...defaultValues,
     },
@@ -77,9 +84,9 @@ export function SubscriptionFormDialog({
 
   useEffect(() => {
     if (open) form.reset({
-      name: "", provider: "", amount: 0, currency: "USD",
+      name: "", provider: "", amount: 0,
       billingCycle: "monthly", billingInterval: 1, categoryId: "",
-      startDate: new Date().toISOString().split("T")[0], nextBillingDate: "", endDate: "", notes: "",
+      startDate: new Date().toISOString().split("T")[0], nextBillingDate: "", endDate: "", status: "active", notes: "",
       ...defaultValues,
     });
   }, [open, defaultValues, form]);
@@ -117,25 +124,6 @@ export function SubscriptionFormDialog({
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="subscription-currency">Currency</Label>
-              <Select
-                value={form.watch("currency") || "USD"}
-                onValueChange={(v) => form.setValue("currency", v)}
-              >
-                <SelectTrigger id="subscription-currency">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {currencies.map((c) => (
-                    <SelectItem key={c.code} value={c.code}>{c.code} - {c.symbol}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
               <Label htmlFor="subscription-billing-cycle">Billing Cycle</Label>
               <Select
                 value={form.watch("billingCycle")}
@@ -153,6 +141,9 @@ export function SubscriptionFormDialog({
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             {form.watch("billingCycle") === "custom" && (
               <div className="space-y-2">
                 <Label htmlFor="billingInterval">Days</Label>
@@ -161,20 +152,14 @@ export function SubscriptionFormDialog({
             )}
             <div className="space-y-2">
               <Label htmlFor="subscription-category">Category</Label>
-              <Select
+              <CategorySelect
+                id="subscription-category"
+                categories={expenseCategories}
                 value={form.watch("categoryId") || "none"}
                 onValueChange={(v) => form.setValue("categoryId", v === "none" ? "" : v)}
-              >
-                <SelectTrigger id="subscription-category">
-                  <SelectValue placeholder="No category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No category</SelectItem>
-                  {expenseCategories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                noneLabel="No category"
+                placeholder="No category"
+              />
             </div>
           </div>
 
@@ -195,16 +180,55 @@ export function SubscriptionFormDialog({
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes (optional)</Label>
-            <Input id="notes" placeholder="Add notes..." {...form.register("notes")} />
-          </div>
+          {!showMore && (
+            <button
+              type="button"
+              onClick={() => setShowMore(true)}
+              className="text-xs font-medium text-primary hover:underline"
+            >
+              More options (status, end date, notes)
+            </button>
+          )}
+          {(showMore || isEdit) && (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="subscription-status">Status</Label>
+                  <Select
+                    value={form.watch("status") || "active"}
+                    onValueChange={(v) => form.setValue("status", v as "active" | "paused" | "cancelled")}
+                  >
+                    <SelectTrigger id="subscription-status">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="paused">Paused — not counted in commitments</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="endDate">End Date (optional)</Label>
+                  <Input id="endDate" type="date" {...form.register("endDate")} />
+                  {form.formState.errors.endDate && (
+                    <p className="text-sm text-destructive">{form.formState.errors.endDate.message}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="notes">Notes (optional)</Label>
+                <Input id="notes" placeholder="Add notes..." {...form.register("notes")} />
+              </div>
+            </>
+          )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit">{defaultValues?.name ? "Save" : "Add"}</Button>
+            <Button type="submit">{isEdit ? "Save" : "Add"}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

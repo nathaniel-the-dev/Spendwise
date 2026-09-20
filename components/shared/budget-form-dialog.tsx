@@ -22,15 +22,21 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useCategories } from "@/hooks/use-categories";
+import { CategorySelect } from "@/components/shared/category-select";
 import { useEffect } from "react";
 
-const budgetSchema = z.object({
-  categoryId: z.string().min(1, "Category is required"),
-  amount: z.coerce.number().positive("Amount must be positive"),
-  period: z.enum(["weekly", "monthly", "yearly"]),
-  startDate: z.string().min(1, "Start date is required"),
-  endDate: z.string().optional(),
-});
+const budgetSchema = z
+  .object({
+    categoryId: z.string().min(1, "Category is required"),
+    amount: z.coerce.number().positive("Amount must be positive"),
+    period: z.enum(["weekly", "monthly", "yearly"]),
+    startDate: z.string().min(1, "Start date is required"),
+    endDate: z.string().optional(),
+  })
+  .refine((d) => !d.endDate || !d.startDate || new Date(d.endDate) >= new Date(d.startDate), {
+    message: "End date must be on or after the start date",
+    path: ["endDate"],
+  });
 
 export type BudgetFormValues = z.infer<typeof budgetSchema>;
 
@@ -82,19 +88,13 @@ export function BudgetFormDialog({
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="budget-category">Category</Label>
-            <Select
+            <CategorySelect
+              id="budget-category"
+              categories={expenseCategories}
               value={form.watch("categoryId")}
               onValueChange={(v) => form.setValue("categoryId", v)}
-            >
-              <SelectTrigger id="budget-category">
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                {expenseCategories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder="Select category"
+            />
             {form.formState.errors.categoryId && (
               <p className="text-sm text-destructive">{form.formState.errors.categoryId.message}</p>
             )}
@@ -137,6 +137,9 @@ export function BudgetFormDialog({
             <div className="space-y-2">
               <Label htmlFor="endDate">End Date (optional)</Label>
               <Input id="endDate" type="date" {...form.register("endDate")} />
+              {form.formState.errors.endDate && (
+                <p className="text-sm text-destructive">{form.formState.errors.endDate.message}</p>
+              )}
             </div>
           </div>
 
@@ -144,7 +147,7 @@ export function BudgetFormDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit">{defaultValues?.categoryId ? "Save" : "Create"}</Button>
+            <Button type="submit">{defaultValues?.categoryId ? "Save" : "Add"}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

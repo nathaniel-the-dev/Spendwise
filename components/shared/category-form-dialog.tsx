@@ -77,7 +77,7 @@ export function CategoryFormDialog({
           <div className="space-y-2">
             <Label>Type</Label>
             <Select
-              defaultValue={form.watch("type")}
+              value={form.watch("type")}
               onValueChange={(v) => form.setValue("type", v as "expense" | "income")}
             >
               <SelectTrigger>
@@ -92,11 +92,17 @@ export function CategoryFormDialog({
 
           <div className="space-y-2">
             <Label>Icon</Label>
-            <div className="grid grid-cols-8 gap-2">
+            <div
+              className="grid max-h-24 grid-cols-8 gap-2 overflow-y-auto pr-1"
+              role="radiogroup"
+              aria-label="Category icon"
+            >
               {categoryIcons.map((icon) => (
                 <button
                   key={icon}
                   type="button"
+                  role="radio"
+                  aria-checked={form.watch("icon") === icon}
                   data-active={form.watch("icon") === icon}
                   className="flex h-8 w-8 items-center justify-center rounded-lg border text-xs hover:bg-accent data-[active=true]:border-primary data-[active=true]:bg-primary/10"
                   onClick={() => form.setValue("icon", icon)}
@@ -111,11 +117,15 @@ export function CategoryFormDialog({
 
           <div className="space-y-2">
             <Label>Color</Label>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Category color">
               {categoryColors.map((color) => (
                 <button
                   key={color}
                   type="button"
+                  role="radio"
+                  aria-checked={form.watch("color") === color}
+                  aria-label={`Color ${color}`}
+                  title={color}
                   data-active={form.watch("color") === color}
                   className="h-7 w-7 rounded-full border-2 transition-all data-[active=true]:scale-110 data-[active=true]:border-foreground"
                   style={{ backgroundColor: color }}
@@ -129,7 +139,7 @@ export function CategoryFormDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit">{defaultValues?.name ? "Save" : "Create"}</Button>
+            <Button type="submit">{defaultValues?.name ? "Save" : "Add"}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

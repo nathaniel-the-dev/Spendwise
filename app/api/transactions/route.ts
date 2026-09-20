@@ -7,7 +7,6 @@ import { generateId } from "@/lib/utils";
 const createSchema = z.object({
   amount: z.number().finite().positive(),
   currency: z.string().length(3).optional(),
-  amountInPreferred: z.number().optional(),
   description: z.string().min(1),
   date: z.string(),
   type: z.enum(["expense", "income"]).optional(),
@@ -26,16 +25,26 @@ export async function GET(request: Request) {
     const type = url.searchParams.get("type");
     const startDate = url.searchParams.get("startDate");
     const endDate = url.searchParams.get("endDate");
-    const limit = parseInt(url.searchParams.get("limit") ?? "50");
-    const offset = parseInt(url.searchParams.get("offset") ?? "0");
+    const minAmount = url.searchParams.get("minAmount");
+    const maxAmount = url.searchParams.get("maxAmount");
+    const uncategorized = url.searchParams.get("uncategorized");
+    const tag = url.searchParams.get("tag");
+    const sort = url.searchParams.get("sort") ?? "date";
+    const dir = url.searchParams.get("dir") ?? "desc";
+    const limit = Math.min(Math.max(parseInt(url.searchParams.get("limit") ?? "50") || 50, 1), 200);
+    const offset = Math.max(parseInt(url.searchParams.get("offset") ?? "0") || 0, 0);
 
     let query = supabase
       .from("transaction")
-      .select("*, category(*)")
-      .eq("user_id", userId)
-      .order("date", { ascending: false })
-      .order("created_at", { ascending: false })
-      .range(offset, offset + limit - 1);
+      .select("*, category(*)", { count: "exact" })
+      .eq("user_id", userId);
+
+    if (sort === "amount") {
+      query = query.order("amount", { ascending: dir === "asc" });
+    } else {
+      query = query.order("date", { ascending: dir === "asc" });
+    }
+    query = query.order("created_at", { ascending: false }).range(offset, offset + limit - 1);
 
     if (search) {
       query = query.or(`description.ilike.%${search}%,notes.ilike.%${search}%`);
@@ -57,14 +66,32 @@ export async function GET(request: Request) {
       query = query.lte("date", endDate);
     }
 
-    const { data, error: queryError } = await query;
+    if (minAmount) {
+      query = query.gte("amount", parseFloat(minAmount));
+    }
+
+    if (maxAmount) {
+      query = query.lte("amount", parseFloat(maxAmount));
+    }
+
+    if (uncategorized === "true") {
+      query = query.is("category_id", null);
+    }
+
+    if (tag) {
+      query = query.contains("tags", [tag]);
+    }
+
+    const { data, error: queryError, count } = await query;
 
     if (queryError) {
       console.error("Supabase query error:", queryError);
       return NextResponse.json({ error: "Failed to fetch transactions" }, { status: 500 });
     }
 
-    return NextResponse.json(data ?? []);
+    return NextResponse.json(data ?? [], {
+      headers: { "X-Total-Count": String(count ?? 0) },
+    });
   } catch (error) {
     return handleError(error);
   }
@@ -84,7 +111,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { amount, currency, amountInPreferred, description, date, type, categoryId, tags, notes } = parsed.data;
+    const { amount, currency, description, date, type, categoryId, tags, notes } = parsed.data;
     const id = generateId();
 
     const { data, error: insertError } = await supabase
@@ -93,7 +120,6 @@ export async function POST(request: Request) {
         id,
         amount,
         currency: currency ?? "USD",
-        amount_in_preferred: amountInPreferred ?? null,
         description,
         date,
         type: type ?? "expense",

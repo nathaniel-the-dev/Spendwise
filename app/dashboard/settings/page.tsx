@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { User, Palette, Shield, Monitor, Sun, Moon, Camera, Loader2 } from "lucide-react";
@@ -30,6 +31,7 @@ type Profile = {
 export default function SettingsPage() {
   const { user, refresh } = useUser();
   const { setTheme } = useTheme();
+  const queryClient = useQueryClient();
 
   const [name, setName] = useState(user?.name ?? "");
   const [currency, setCurrency] = useState("USD");
@@ -125,6 +127,8 @@ export default function SettingsPage() {
         const err = await res.json();
         throw new Error(err.error || "Failed to save");
       }
+      // Keep cached settings (display currency, locale, theme) fresh everywhere.
+      queryClient.invalidateQueries({ queryKey: ["settings"] });
       toast.success(successMsg);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save");
@@ -172,7 +176,8 @@ export default function SettingsPage() {
   return (
     <div className="space-y-5 max-w-2xl animate-fade-in">
       <div>
-        <h1 className="text-xl md:text-2xl font-semibold tracking-tight">Settings</h1>
+        <p className="label-mono text-muted-foreground mb-1.5">Settings</p>
+        <h1 className="font-display text-2xl md:text-3xl font-semibold tracking-[-0.01em]">Make SpendWise yours</h1>
         <p className="text-sm text-muted-foreground">Manage your account and preferences.</p>
       </div>
 
@@ -221,7 +226,9 @@ export default function SettingsPage() {
           <div className="space-y-1.5">
             <Label htmlFor="email" className="text-sm">Email</Label>
             <Input id="email" type="email" defaultValue={user?.email ?? ""} disabled />
-            <p className="text-xs text-muted-foreground">Email cannot be changed.</p>
+            <p className="text-xs text-muted-foreground">
+              Your sign-in email can't be changed here. To use a different email, create a new account or contact support.
+            </p>
           </div>
           <Button onClick={handleSaveName} disabled={savingName || loading}>
             {savingName ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : null}
@@ -277,9 +284,9 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-1.5">
-            <Label htmlFor="currency" className="text-sm">Preferred Currency</Label>
+            <Label htmlFor="currency" className="text-sm">Currency</Label>
             <p className="text-xs text-muted-foreground">
-              The base currency used when you log transactions without one.
+              The currency all your amounts are tracked and displayed in.
             </p>
             <CurrencySelect
               value={currency}

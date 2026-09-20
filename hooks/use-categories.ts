@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { readableError } from "@/lib/api-error";
 
 export type Category = {
   id: string;
@@ -53,8 +54,7 @@ async function createCategory(data: CategoryInput): Promise<Category> {
     body: JSON.stringify(data),
   });
   if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error || "Failed to create category");
+    throw new Error(await readableError(res, "Couldn't save the category. Check the name, then try again."));
   }
   return mapCategory(await res.json());
 }
@@ -66,8 +66,7 @@ async function updateCategory(id: string, data: Partial<CategoryInput>): Promise
     body: JSON.stringify(data),
   });
   if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error || "Failed to update category");
+    throw new Error(await readableError(res, "Couldn't update the category. Check the name, then try again."));
   }
   return mapCategory(await res.json());
 }
@@ -75,8 +74,7 @@ async function updateCategory(id: string, data: Partial<CategoryInput>): Promise
 async function deleteCategory(id: string): Promise<void> {
   const res = await fetch(`/api/categories/${id}`, { method: "DELETE" });
   if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error || "Failed to delete category");
+    throw new Error(await readableError(res, "Couldn't delete the category."));
   }
 }
 

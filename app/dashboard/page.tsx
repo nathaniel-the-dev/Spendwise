@@ -7,12 +7,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ArrowRight, AlertTriangle, RefreshCcw, Plus, Wallet, Lightbulb, Sprout, Circle } from "lucide-react";
-import { categoryIconMap } from "@/components/category-icon";
-import { formatCurrency, formatDate, normalizeBillingAmount } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ArrowRight, AlertTriangle, RefreshCcw, Plus, Wallet, Lightbulb, Sprout, HelpCircle } from "lucide-react";
+import { TransactionList } from "@/components/transaction-list";
+import { SpendingChart } from "@/components/spending-chart";
+import { ErrorState } from "@/components/shared/error-state";
+import { formatCurrency, normalizeBillingAmount, txValue, computeBudgetSpend, budgetPct, budgetTone, periodWindowStart } from "@/lib/utils";
 import { useTransactions } from "@/hooks/use-transactions";
 import { useSubscriptions } from "@/hooks/use-subscriptions";
 import { useBudgets } from "@/hooks/use-budgets";
+import { useSettings } from "@/hooks/use-settings";
 
 function getGreeting(hour: number, name: string) {
   if (hour < 12) return `Good morning, ${name}`;
@@ -28,11 +32,20 @@ function getSubtitle(hour: number) {
 
 export default function DashboardPage() {
   const { user } = useUser();
-  const { data: transactions, isLoading: txLoading } = useTransactions({ limit: 500 });
-  const { data: subscriptions, isLoading: subLoading } = useSubscriptions();
-  const { data: budgets, isLoading: budgetLoading } = useBudgets();
+  const { data: transactions, isLoading: txLoading, isError: txError, refetch: refetchTx } = useTransactions({ limit: 500 });
+  const { data: subscriptions, isLoading: subLoading, isError: subError, refetch: refetchSub } = useSubscriptions();
+  const { data: budgets, isLoading: budgetLoading, isError: budgetError, refetch: refetchBudget } = useBudgets();
+  const { data: settings } = useSettings();
+
+  const preferredCurrency = settings?.preferredCurrency ?? "USD";
 
   const isLoading = txLoading || subLoading || budgetLoading;
+  const loadError = txError || subError || budgetError;
+  const retryAll = () => {
+    refetchTx();
+    if (subError) refetchSub();
+    if (budgetError) refetchBudget();
+  };
 
   const now = new Date();
   const hour = now.getHours();
@@ -51,8 +64,8 @@ export default function DashboardPage() {
       (acc, tx) => {
         const d = new Date(tx.date);
         if (d >= start && d <= end) {
-          if (tx.type === "expense") acc.expenses += tx.amount;
-          else acc.income += tx.amount;
+          if (tx.type === "expense") acc.expenses += txValue(tx);
+          else acc.income += txValue(tx);
           acc.count++;
         }
         return acc;
@@ -63,9 +76,7 @@ export default function DashboardPage() {
 
   const thisWeek = useMemo(() => {
     if (!transactions) return { expenses: 0, count: 0 };
-    const start = new Date();
-    start.setDate(start.getDate() - start.getDay());
-    start.setHours(0, 0, 0, 0);
+    const start = periodWindowStart("weekly");
     const end = new Date(start);
     end.setDate(end.getDate() + 6);
     end.setHours(23, 59, 59, 999);
@@ -73,7 +84,7 @@ export default function DashboardPage() {
       (acc, tx) => {
         const d = new Date(tx.date);
         if (d >= start && d <= end && tx.type === "expense") {
-          acc.expenses += tx.amount;
+          acc.expenses += txValue(tx);
           acc.count++;
         }
         return acc;
@@ -95,7 +106,7 @@ export default function DashboardPage() {
       (acc, tx) => {
         const d = new Date(tx.date);
         if (d >= start && d <= end && tx.type === "expense") {
-          acc.expenses += tx.amount;
+          acc.expenses += txValue(tx);
         }
         return acc;
       },
@@ -151,8 +162,9 @@ export default function DashboardPage() {
     return subscriptions
       .filter((s) => s.status === "active")
       .reduce((sum, s) => {
+        // Normalize the subscription's stored amount to a monthly figure.
         return sum + normalizeBillingAmount(
-          s.amount,
+          txValue(s),
           s.billingCycle,
           s.billingInterval ?? 1,
         );
@@ -161,35 +173,9 @@ export default function DashboardPage() {
 
   const budgetsWithSpend = useMemo(() => {
     if (!budgets || !transactions) return [];
-    const now = new Date();
-    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     return budgets.map((budget) => {
-      const categoryTransactions = transactions.filter((tx) => {
-        if (tx.categoryId !== budget.categoryId) return false;
-        const txDate = new Date(tx.date);
-        switch (budget.period) {
-          case "weekly": {
-            const weekStart = new Date(now);
-            weekStart.setDate(now.getDate() - now.getDay());
-            weekStart.setHours(0, 0, 0, 0);
-            return txDate >= weekStart;
-          }
-          case "monthly":
-            return txDate >= currentMonthStart;
-          case "yearly": {
-            const yearStart = new Date(now.getFullYear(), 0, 1);
-            return txDate >= yearStart;
-          }
-          default:
-            return false;
-        }
-      });
-      const spent = categoryTransactions.reduce(
-        (sum, tx) => sum + (tx.type === "expense" ? Math.abs(tx.amount) : 0),
-        0
-      );
-      const pct = budget.amount > 0 ? Math.min(Math.round((spent / budget.amount) * 100), 100) : 0;
-      return { ...budget, spent, pct };
+      const spent = computeBudgetSpend(budget, transactions);
+      return { ...budget, spent, pct: budgetPct(spent, budget.amount) };
     });
   }, [budgets, transactions]);
 
@@ -222,7 +208,7 @@ export default function DashboardPage() {
         id: `budget-${budget.id}`,
         tone: "danger",
         icon: AlertTriangle,
-        text: `Over budget in ${budget.category?.name ?? "Uncategorized"}: ${formatCurrency(budget.spent)} of ${formatCurrency(budget.amount)}`,
+        text: `Over budget in ${budget.category?.name ?? "Uncategorized"}: ${formatCurrency(budget.spent)} of ${formatCurrency(budget.amount)} (+${formatCurrency(budget.spent - budget.amount)})`,
         href: "/dashboard/budgets",
       });
     }
@@ -265,10 +251,23 @@ export default function DashboardPage() {
     );
   }
 
+  if (loadError && !transactions) {
+    return (
+      <div className="animate-fade-in">
+        <ErrorState
+          title="Couldn't load your overview"
+          description="We couldn't reach your data. Nothing was lost — try again."
+          onRetry={retryAll}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5">
       <div className="animate-fade-in">
-        <h1 className="text-xl md:text-2xl font-semibold tracking-tight">
+        <p className="label-mono text-muted-foreground mb-1.5">Overview</p>
+        <h1 className="font-display text-2xl md:text-3xl font-semibold tracking-[-0.01em]">
           {getGreeting(hour, name)}
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -311,7 +310,19 @@ export default function DashboardPage() {
                   {thisMonth.income > 0 ? (
                     <>
                       <p className="mt-2 text-sm text-muted-foreground">
-                        After {formatCurrency(thisMonth.expenses)} spent and {formatCurrency(committed)} in recurring commitments.
+                        After {formatCurrency(thisMonth.expenses)} spent and {formatCurrency(committed)} in{" "}
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="inline-flex cursor-help items-center gap-0.5 underline decoration-dotted underline-offset-2">
+                              recurring commitments
+                              <HelpCircle className="h-3 w-3" aria-hidden="true" />
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-60">
+                            Upcoming charges from your active subscriptions, normalized to a monthly amount. Already-charged subscriptions this month are counted under Spent, not here — no double-counting.
+                          </TooltipContent>
+                        </Tooltip>
+                        .
                       </p>
                       <div
                         className="mt-4 flex h-2.5 w-full max-w-md overflow-hidden rounded-full bg-muted"
@@ -397,70 +408,40 @@ export default function DashboardPage() {
           )}
 
           <div className="grid gap-4 lg:grid-cols-3">
-            <Card className="lg:col-span-2 animate-fade-in-up stagger-4">
-              <CardHeader className="flex flex-row items-center justify-between px-4 py-3">
-                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Recent Transactions</CardTitle>
-                <Link href="/dashboard/transactions">
-                  <Button variant="ghost" size="sm" className="gap-1 text-xs h-8 px-2">
-                    View All <ArrowRight className="h-3.5 w-3.5" />
-                  </Button>
-                </Link>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="divide-y divide-border/50">
-                  {recentTransactions.map((tx) => {
-                    const IconComponent = tx.category?.icon ? categoryIconMap[tx.category.icon] ?? Circle : Circle;
-                    const isExpense = tx.amount < 0 || tx.type === "expense";
-                    const absAmount = Math.abs(tx.amount);
-                    return (
-                      <div key={tx.id} className="flex items-center justify-between px-4 py-3 hover:bg-muted/40 transition-colors">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted flex-shrink-0">
-                            <IconComponent className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium truncate">{tx.description}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {tx.category?.name ?? "Uncategorized"} &middot; {formatDate(new Date(tx.date))}
-                            </p>
-                          </div>
-                        </div>
-                        <span className={`text-sm font-medium tabular-nums flex-shrink-0 ml-3 ${!isExpense ? "text-emerald-600 dark:text-emerald-400" : ""}`}>
-                          {isExpense ? "-" : "+"}{formatCurrency(absAmount, tx.currency)}
-                        </span>
-                      </div>
-                    );
-                  })}
-                  {recentTransactions.length === 0 && (
-                    <div className="px-4 py-6 text-center text-sm text-muted-foreground">
-                      No transactions yet.
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            <div className="lg:col-span-2 space-y-4 animate-fade-in-up stagger-4">
+              <TransactionList transactions={recentTransactions} currency={preferredCurrency} />
+              <SpendingChart transactions={transactions} currency={preferredCurrency} />
+            </div>
 
             <div className="space-y-3">
               <Card className="animate-fade-in-up stagger-5">
                 <CardHeader className="px-4 py-3">
-                  <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Budgets</CardTitle>
+                  <CardTitle className="label-mono text-muted-foreground">Budgets</CardTitle>
                 </CardHeader>
                 <CardContent className="px-4 pb-4">
-                  {budgetsWithSpend.length > 0 ? (
+                  {budgetError ? (
+                    <div className="text-center py-5 text-sm text-muted-foreground">
+                      <p>Budgets couldn't be loaded.</p>
+                      <Button variant="link" size="sm" className="mt-0.5 text-xs" onClick={() => refetchBudget()}>Try again</Button>
+                    </div>
+                  ) : budgetsWithSpend.length > 0 ? (
                     <div className="space-y-3">
                       {budgetsWithSpend.slice(0, 4).map((budget) => {
                         const cat = budget.category;
-                        const progressTone: "success" | "warning" | "danger" =
-                          budget.spent > budget.amount ? "danger" : budget.pct > 75 ? "warning" : "success";
+                        const over = budget.spent > budget.amount;
+                        const progressTone = budgetTone(budget.spent, budget.amount);
                         return (
                           <div key={budget.id} className="space-y-1">
                             <div className="flex items-center justify-between text-sm">
-                              <span className="font-medium truncate">{cat?.name ?? "Uncategorized"}</span>
+                              <span className="font-medium truncate inline-flex items-center gap-1.5">
+                                <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: cat?.color ?? "var(--muted-foreground)" }} aria-hidden="true" />
+                                {cat?.name ?? "All expenses"}
+                              </span>
                               <span className="text-muted-foreground tabular-nums">{formatCurrency(budget.spent)} / {formatCurrency(budget.amount)}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <Progress value={budget.pct} tone={progressTone} className="flex-1" />
-                              <span className="text-xs text-muted-foreground tabular-nums w-8 text-right">{budget.pct}%</span>
+                              <Progress value={Math.min(budget.pct, 100)} tone={progressTone} className="flex-1" />
+                              <span className={`text-xs tabular-nums w-10 text-right font-medium ${over ? "text-destructive" : "text-muted-foreground"}`}>{budget.pct}%</span>
                             </div>
                           </div>
                         );
@@ -484,7 +465,7 @@ export default function DashboardPage() {
 
               <Card className="animate-fade-in-up stagger-6">
                 <CardHeader className="px-4 py-3">
-                  <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Upcoming Renewals</CardTitle>
+                  <CardTitle className="label-mono text-muted-foreground">Upcoming Renewals</CardTitle>
                 </CardHeader>
                 <CardContent className="px-4 pb-4">
                   {upcomingSubscriptions.length > 0 ? (
@@ -502,9 +483,9 @@ export default function DashboardPage() {
                               </p>
                             </div>
                             <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                              <span className="text-sm font-medium tabular-nums">{formatCurrency(sub.amount, sub.currency)}</span>
+                              <span className="text-sm font-medium tabular-nums">{formatCurrency(sub.amount, preferredCurrency)}</span>
                               {daysUntil <= 2 && daysUntil >= 0 && (
-                                <Badge variant="destructive">Soon</Badge>
+                                <Badge variant="outline">Soon</Badge>
                               )}
                             </div>
                           </div>

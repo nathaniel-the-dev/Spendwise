@@ -1,91 +1,106 @@
 @import "tailwindcss";
 
-@plugin "tailwindcss-animate";
+@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: oklch(0.985 0.003 80);
-  --foreground: oklch(0.18 0.012 70);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.012 70);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.012 70);
-  --primary: oklch(0.55 0.16 155);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.965 0.004 80);
-  --secondary-foreground: oklch(0.18 0.012 70);
-  --muted: oklch(0.965 0.004 80);
-  --muted-foreground: oklch(0.52 0.01 70);
-  --accent: oklch(0.955 0.006 80);
-  --accent-foreground: oklch(0.18 0.012 70);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
-  --success: oklch(0.55 0.16 155);
-  --success-foreground: oklch(0.985 0 0);
-  --warning: oklch(0.58 0.15 70);
-  --warning-foreground: oklch(0.985 0 0);
-  --spend: oklch(0.55 0.05 250);
-  --spend-foreground: oklch(0.985 0 0);
-  --border: oklch(0.915 0.005 75);
-  --input: oklch(0.915 0.005 75);
-  --ring: oklch(0.55 0.16 155);
-  --radius: 0.75rem;
-  --chart-1: oklch(0.6 0.17 155);
-  --chart-2: oklch(0.58 0.14 230);
-  --chart-3: oklch(0.72 0.15 75);
-  --chart-4: oklch(0.55 0.19 290);
-  --chart-5: oklch(0.62 0.19 10);
-  --sidebar-background: oklch(0.99 0.002 80);
-  --sidebar-foreground: oklch(0.45 0.012 70);
-  --sidebar-primary: oklch(0.55 0.16 155);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.965 0.004 80);
-  --sidebar-accent-foreground: oklch(0.18 0.012 70);
-  --sidebar-border: oklch(0.915 0.005 75);
-  --sidebar-ring: oklch(0.55 0.16 155);
+  --background: oklch(0.975 0.006 85);
+  --foreground: oklch(0.24 0.015 160);
+  --card: oklch(0.995 0.003 85);
+  --card-foreground: oklch(0.24 0.015 160);
+  --popover: oklch(0.995 0.003 85);
+  --popover-foreground: oklch(0.24 0.015 160);
+  --primary: oklch(0.47 0.12 158);
+  --primary-foreground: oklch(0.98 0.005 90);
+  --secondary: oklch(0.94 0.012 95);
+  --secondary-foreground: oklch(0.28 0.02 160);
+  --muted: oklch(0.945 0.008 90);
+  --muted-foreground: oklch(0.52 0.02 130);
+  --accent: oklch(0.93 0.02 150);
+  --accent-foreground: oklch(0.28 0.02 160);
+  --destructive: oklch(0.58 0.21 25);
+  --destructive-foreground: oklch(0.98 0.005 90);
+  --success: oklch(0.5 0.13 155);
+  --success-foreground: oklch(0.98 0.005 90);
+  --warning: oklch(0.62 0.14 75);
+  --warning-foreground: oklch(0.2 0.02 80);
+  --spend: oklch(0.5 0.06 250);
+  --spend-foreground: oklch(0.98 0.005 90);
+  /* Marketing voice: the semantic four double as meaning-colors on Persuade
+     surfaces — spend (slate) = money out, success (moss) = money in / what
+     you keep, warning (amber) = commitments, primary = the product's word.
+     The privacy band is the one committed green region on the landing page;
+     wash-moss is its quiet sibling tint. Both are composed per theme, not
+     inverted. */
+  --band: oklch(0.4 0.11 158);
+  --band-foreground: oklch(0.97 0.006 85);
+  --wash-moss: oklch(0.965 0.018 150);
+  --border: oklch(0.895 0.012 90);
+  --input: oklch(0.895 0.012 90);
+  --ring: oklch(0.47 0.12 158);
+  --radius: 0.625rem;
+  --chart-1: oklch(0.55 0.14 158);
+  --chart-2: oklch(0.6 0.12 230);
+  --chart-3: oklch(0.7 0.13 80);
+  --chart-4: oklch(0.55 0.16 290);
+  --chart-5: oklch(0.62 0.17 20);
+  --sidebar-background: oklch(0.965 0.01 95);
+  --sidebar-foreground: oklch(0.35 0.02 150);
+  --sidebar-primary: oklch(0.47 0.12 158);
+  --sidebar-primary-foreground: oklch(0.98 0.005 90);
+  --sidebar-accent: oklch(0.93 0.02 150);
+  --sidebar-accent-foreground: oklch(0.28 0.02 160);
+  --sidebar-border: oklch(0.895 0.012 90);
+  --sidebar-ring: oklch(0.47 0.12 158);
   --sidebar-width: 15rem;
 }
 
+/* Softened dark mode: deep green-charcoal (not near-black) with warm
+   off-white text (not pure white). Contrast delta dropped from ~0.83 to
+   ~0.72 so long sessions don't strain the eyes, while staying AA-legible. */
 .dark {
-  --background: oklch(0.145 0.005 70);
-  --foreground: oklch(0.975 0.003 75);
-  --card: oklch(0.185 0.006 70);
-  --card-foreground: oklch(0.975 0.003 75);
-  --popover: oklch(0.185 0.006 70);
-  --popover-foreground: oklch(0.975 0.003 75);
-  --primary: oklch(0.68 0.18 155);
-  --primary-foreground: oklch(0.145 0.005 70);
-  --secondary: oklch(0.26 0.007 70);
-  --secondary-foreground: oklch(0.975 0.003 75);
-  --muted: oklch(0.22 0.006 70);
-  --muted-foreground: oklch(0.65 0.01 70);
-  --accent: oklch(0.26 0.007 70);
-  --accent-foreground: oklch(0.975 0.003 75);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
-  --success: oklch(0.68 0.18 155);
-  --success-foreground: oklch(0.145 0.005 70);
-  --warning: oklch(0.78 0.16 80);
-  --warning-foreground: oklch(0.145 0.005 70);
-  --spend: oklch(0.72 0.05 250);
-  --spend-foreground: oklch(0.145 0.005 70);
-  --border: oklch(0.26 0.008 70);
-  --input: oklch(0.26 0.008 70);
-  --ring: oklch(0.68 0.18 155);
-  --chart-1: oklch(0.68 0.18 155);
-  --chart-2: oklch(0.7 0.15 230);
-  --chart-3: oklch(0.78 0.16 75);
-  --chart-4: oklch(0.65 0.17 290);
-  --chart-5: oklch(0.7 0.17 10);
-  --sidebar-background: oklch(0.13 0.005 70);
-  --sidebar-foreground: oklch(0.975 0.003 75);
-  --sidebar-primary: oklch(0.68 0.18 155);
-  --sidebar-primary-foreground: oklch(0.145 0.005 70);
-  --sidebar-accent: oklch(0.22 0.006 70);
-  --sidebar-accent-foreground: oklch(0.975 0.003 75);
-  --sidebar-border: oklch(0.26 0.008 70);
-  --sidebar-ring: oklch(0.68 0.18 155);
+  --background: oklch(0.2 0.014 160);
+  --foreground: oklch(0.92 0.01 95);
+  --card: oklch(0.245 0.016 160);
+  --card-foreground: oklch(0.92 0.01 95);
+  --popover: oklch(0.26 0.016 160);
+  --popover-foreground: oklch(0.92 0.01 95);
+  --primary: oklch(0.72 0.14 155);
+  --primary-foreground: oklch(0.18 0.02 160);
+  --secondary: oklch(0.3 0.018 160);
+  --secondary-foreground: oklch(0.92 0.01 95);
+  --muted: oklch(0.29 0.016 160);
+  --muted-foreground: oklch(0.7 0.02 120);
+  --accent: oklch(0.32 0.02 155);
+  --accent-foreground: oklch(0.93 0.01 95);
+  --destructive: oklch(0.65 0.19 25);
+  --destructive-foreground: oklch(0.16 0.02 20);
+  --success: oklch(0.7 0.14 155);
+  --success-foreground: oklch(0.18 0.02 160);
+  --warning: oklch(0.78 0.13 80);
+  --warning-foreground: oklch(0.18 0.02 160);
+  --spend: oklch(0.7 0.06 250);
+  --spend-foreground: oklch(0.18 0.02 160);
+  --band: oklch(0.27 0.04 160);
+  --band-foreground: oklch(0.93 0.01 95);
+  --wash-moss: oklch(0.235 0.02 158);
+  --border: oklch(0.34 0.016 160);
+  --input: oklch(0.34 0.016 160);
+  --ring: oklch(0.72 0.14 155);
+  --chart-1: oklch(0.72 0.14 155);
+  --chart-2: oklch(0.7 0.12 230);
+  --chart-3: oklch(0.78 0.13 80);
+  --chart-4: oklch(0.68 0.15 290);
+  --chart-5: oklch(0.7 0.15 20);
+  --sidebar-background: oklch(0.185 0.015 160);
+  --sidebar-foreground: oklch(0.9 0.01 95);
+  --sidebar-primary: oklch(0.72 0.14 155);
+  --sidebar-primary-foreground: oklch(0.18 0.02 160);
+  --sidebar-accent: oklch(0.3 0.02 155);
+  --sidebar-accent-foreground: oklch(0.93 0.01 95);
+  --sidebar-border: oklch(0.32 0.016 160);
+  --sidebar-ring: oklch(0.72 0.14 155);
 }
 
 @theme inline {
@@ -111,6 +126,9 @@
   --color-warning-foreground: var(--warning-foreground);
   --color-spend: var(--spend);
   --color-spend-foreground: var(--spend-foreground);
+  --color-band: var(--band);
+  --color-band-foreground: var(--band-foreground);
+  --color-wash-moss: var(--wash-moss);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -131,22 +149,67 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-plex-mono);
+  --font-display: var(--font-fraunces), var(--font-inter);
 }
 
 @layer base {
   * {
     @apply border-border;
   }
+  /* Native form-control chrome (date-picker icon, number spinners, autofill
+     highlight, scrollbars, <option> lists) is painted by the browser, not our
+     tokens. Declaring the scheme makes those parts follow the theme, so dark
+     inputs stop showing light-mode indicators. */
+  html {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
   body {
     @apply bg-background text-foreground;
     font-synthesis-weight: none;
-    text-rendering: optimizeLegibility;
+  }
+  /* Chrome paints autofilled fields with an opaque system yellow/white that
+     ignores our background; repaint it from the theme instead. */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px var(--card) inset;
+    -webkit-text-fill-color: var(--foreground);
+    caret-color: var(--foreground);
+    border-color: var(--input);
+    transition: background-color 9999s ease-in-out 0s;
+  }
+  /* Selection carries the brand hue in both modes instead of browser blue. */
+  ::selection {
+    background: color-mix(in oklch, var(--primary) 22%, transparent);
+    color: var(--foreground);
   }
 }
 
 @layer utilities {
+  /* Editorial display voice (Fraunces) for hero/section headings. Consumes
+     the --font-display token so there is one source of truth; the WONK/SOFT
+     axes are requested in layout.tsx and dialed in here. */
+  .font-display {
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
+    font-feature-settings: "SOFT" 50, "WONK" 1;
+  }
+
+  /* The ONE micro-label recipe: eyebrows, card titles, table headers. */
+  .label-mono {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
   .glass {
     background: color-mix(in oklch, var(--card) 80%, transparent);
     backdrop-filter: blur(24px);
@@ -175,10 +238,6 @@
     box-shadow:
       0 12px 40px rgb(0 0 0 / 0.08),
       0 4px 12px rgb(0 0 0 / 0.04);
-  }
-
-  .tabular {
-    font-variant-numeric: tabular-nums;
   }
 
   /* Dark mode needs stronger shadows to stay visible against near-black surfaces */

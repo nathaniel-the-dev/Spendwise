@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -86,12 +87,12 @@ export default function RegisterPage() {
     <Card className="w-full max-w-[420px] mx-4 shadow-dialog rounded-xl">
       <CardContent className="p-6 pt-8">
         <div className="text-center mb-6">
-          <Link href="/" className="inline-flex items-center gap-2 font-semibold text-base mb-4">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-bold">$</span>
+          <Link href="/" className="inline-flex items-center gap-2 font-display font-semibold text-base tracking-tight mb-4">
+            <Image src="/icon.png" alt="SpendWise logo" width={30} height={30} className="rounded-lg bg-white p-1 ring-1 ring-black/5" />
             <span>SpendWise</span>
           </Link>
-          <h1 className="text-xl font-semibold tracking-tight">Create an account</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Enter your details to get started</p>
+          <h1 className="font-display text-2xl font-semibold tracking-[-0.01em]">Create an account</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">No bank accounts, no card numbers — just you and your money</p>
         </div>
 
         {error && (
@@ -163,7 +164,7 @@ export default function RegisterPage() {
               </p>
             )}
           </div>
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Button type="submit" className="w-full h-11" disabled={isLoading}>
             {isLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> <span>Creating account...</span></> : "Create Account"}
           </Button>
         </form>
@@ -172,14 +173,14 @@ export default function RegisterPage() {
           <div className="absolute inset-0 flex items-center">
             <span className="w-full border-t" />
           </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+          <div className="relative flex justify-center">
+            <span className="label-mono bg-card px-2 text-muted-foreground">Or continue with</span>
           </div>
         </div>
 
         <Button
           variant="outline"
-          className="w-full gap-2"
+          className="w-full h-11 gap-2"
           onClick={handleGoogleSignIn}
           disabled={isLoading}
         >

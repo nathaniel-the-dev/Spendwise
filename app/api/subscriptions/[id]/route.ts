@@ -9,7 +9,6 @@ const updateSchema = z.object({
   description: z.string().optional().nullable(),
   amount: z.number().finite().positive().optional(),
   currency: z.string().length(3).optional(),
-  amountInPreferred: z.number().optional().nullable(),
   billingCycle: z.enum(["weekly", "monthly", "quarterly", "yearly", "custom"]).optional(),
   billingInterval: z.number().optional(),
   categoryId: z.string().optional().nullable(),
@@ -86,7 +85,6 @@ export async function PATCH(
     if (parsed.data.description !== undefined) updateData.description = parsed.data.description;
     if (parsed.data.amount !== undefined) updateData.amount = parsed.data.amount;
     if (parsed.data.currency !== undefined) updateData.currency = parsed.data.currency;
-    if (parsed.data.amountInPreferred !== undefined) updateData.amount_in_preferred = parsed.data.amountInPreferred;
     if (parsed.data.billingCycle !== undefined) updateData.billing_cycle = parsed.data.billingCycle;
     if (parsed.data.billingInterval !== undefined) updateData.billing_interval = parsed.data.billingInterval;
     if (parsed.data.categoryId !== undefined) updateData.category_id = parsed.data.categoryId;

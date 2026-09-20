@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -32,7 +33,10 @@ import {
 import { useTheme } from "next-themes";
 import { useUser } from "@/components/supabase-provider";
 import { createClient } from "@/lib/supabase/client";
-import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { useSettings } from "@/hooks/use-settings";
+import { setDefaultLocale, setDefaultCurrency } from "@/lib/utils";
+import { useEffect, useState } from "react";
 
 const sidebarLinks = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
@@ -67,6 +71,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { user } = useUser();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [headerSearch, setHeaderSearch] = useState("");
+  const { data: settings } = useSettings();
+
+  // Formatting locale and display currency for the whole dashboard come from the user's settings.
+  useEffect(() => {
+    if (settings?.locale) setDefaultLocale(settings.locale);
+    if (settings?.preferredCurrency) setDefaultCurrency(settings.preferredCurrency);
+  }, [settings?.locale, settings?.preferredCurrency]);
 
   const name = user?.name ?? "User";
   const email = user?.email ?? "";
@@ -81,8 +93,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         )}
       >
         <div className="flex h-16 items-center justify-between px-4 border-b border-sidebar-border/30">
-          <Link href="/dashboard" className="flex items-center gap-2 text-base font-semibold tracking-tight">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-bold">$</span>
+          <Link href="/" className="flex items-center gap-2 font-display text-base font-semibold tracking-tight">
+            <Image src="/icon.png" alt="SpendWise logo" width={28} height={28} className="rounded-lg bg-primary-foreground p-1.5" />
             <span>SpendWise</span>
           </Link>
           <Button variant="ghost" size="icon" className="h-7 w-7 lg:hidden" aria-label="Close navigation" onClick={() => setSidebarOpen(false)}>
@@ -98,6 +110,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 key={link.href}
                 href={link.href}
                 onClick={() => setSidebarOpen(false)}
+                aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150",
                   isActive
@@ -105,7 +118,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 )}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className="h-4 w-4" aria-hidden="true" />
                 {link.label}
               </Link>
             );
@@ -128,7 +141,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <p className="font-medium truncate">{name}</p>
                   <p className="text-xs text-sidebar-foreground/60 truncate">{email}</p>
                 </div>
-                <ChevronDown className="h-4 w-4 text-sidebar-foreground/40 flex-shrink-0" />
+                <ChevronDown className="h-4 w-4 text-sidebar-foreground/40 shrink-0" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" sideOffset={8} className="w-64">
@@ -177,23 +190,36 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {sidebarOpen && (
-        <div className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm lg:hidden" onClick={() => setSidebarOpen(false)} />
+        <button
+          type="button"
+          className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm lg:hidden"
+          aria-label="Close sidebar"
+          onClick={() => setSidebarOpen(false)}
+        />
       )}
 
       <div className="flex flex-1 flex-col overflow-hidden">
         <header className="flex h-14 items-center gap-4 border-b bg-background/80 backdrop-blur-md px-4">
-          <Button variant="ghost" size="icon" className="h-7 w-7 lg:hidden flex-shrink-0" aria-label="Open navigation" onClick={() => setSidebarOpen(true)}>
+          <Button variant="ghost" size="icon" className="h-7 w-7 lg:hidden shrink-0" aria-label="Open navigation" onClick={() => setSidebarOpen(true)}>
             <Menu className="h-4 w-4" />
           </Button>
-          <Link
-            href="/dashboard/transactions"
+          <search
             className="relative flex-1 max-w-md hidden sm:block"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const q = headerSearch.trim();
+              router.push(q ? `/dashboard/transactions?search=${encodeURIComponent(q)}` : "/dashboard/transactions");
+            }}
           >
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <div className="flex h-9 w-full items-center rounded-lg border border-border bg-muted/40 pl-9 pr-3 text-sm text-muted-foreground cursor-text">
-              Search transactions...
-            </div>
-          </Link>
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+            <Input
+              aria-label="Search transactions"
+              placeholder="Search transactions..."
+              value={headerSearch}
+              onChange={(e) => setHeaderSearch(e.target.value)}
+              className="pl-9 h-9 bg-muted/40"
+            />
+          </search>
           <div className="flex items-center gap-1 ml-auto">
             <Button
               variant="ghost"

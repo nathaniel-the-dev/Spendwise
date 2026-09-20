@@ -7,12 +7,12 @@ A modern, personal finance tracker built with **Next.js 15**. Track expenses and
 ## ✨ Features
 
 - **Overview dashboard** — A "one-number" view of money available this month, with an income/spent/commitments breakdown, weekly context, and smart alerts (over-budget, upcoming renewals).
-- **Transaction tracking** — Log expenses and income in any currency, tag a category, and get automatic conversion to your preferred currency.
+- **Transaction tracking** — Log expenses and income by hand in your chosen currency, tag a category, and autocomplete descriptions from your history.
 - **Budgets** — Set weekly, monthly, or yearly limits per category with live spend progress.
 - **Subscriptions** — Track recurring payments with billing-cycle normalization and upcoming renewal alerts.
 - **Reports** — Interactive donut/bar charts with per-category breakdowns.
 - **Categories** — Custom categories with a Lucide icon and color.
-- **Settings** — Update your display name, preferred currency, and theme, and change your password.
+- **Settings** — Update your display name, currency, and theme, and change your password.
 - **Supabase auth** — Email/password sign-up & login with a secure PKCE callback flow; dashboard is protected via middleware.
 - **Dark mode** — System-aware theme with a manual toggle.
 - **Responsive & accessible** — Mobile-first layout, keyboard-friendly Radix UI primitives, reduced-motion support.
@@ -45,6 +45,9 @@ cp .env.example .env.local
 | `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL (Project Settings → API) |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Your Supabase anon/publishable key |
 | `NEXT_PUBLIC_APP_URL` | Your app URL (default: `http://localhost:3000`) |
+| `NEXT_PUBLIC_SUPPORT_EMAIL` | Optional support address shown on the Support page |
+| `GITHUB_FEEDBACK_TOKEN` | Server-only fine-grained PAT (Issues: Write on one repo) used by the Support contact form |
+| `GITHUB_FEEDBACK_REPO` | `owner/repo` the Support form files issues into (default: `nathaniel-the-dev/Spendwise`) |
 
 ### Database Setup
 
@@ -66,12 +69,12 @@ The app reads and writes through Supabase PostgREST. Tables and key columns (all
 |-------|---------|-------------|
 | `user` | User profile + preferences (managed alongside Supabase `auth.users`) | `id`, `name`, `email`, `preferred_currency`, `locale`, `theme`, `created_at`, `updated_at` |
 | `category` | Custom categories per user | `id`, `name`, `icon`, `color`, `type` (`expense`/`income`), `user_id` |
-| `transaction` | Expense/income entries | `id`, `amount`, `currency`, `amount_in_preferred`, `description`, `date`, `type`, `category_id`, `user_id`, `tags`, `notes` |
+| `transaction` | Expense/income entries | `id`, `amount`, `currency`, `description`, `date`, `type`, `category_id`, `user_id`, `tags`, `notes` |
 | `budget` | Spending limits per category | `id`, `amount`, `currency`, `period` (`weekly`/`monthly`/`yearly`), `start_date`, `end_date`, `category_id`, `user_id` |
-| `subscription` | Recurring payments | `id`, `name`, `amount`, `currency`, `amount_in_preferred`, `billing_cycle` (`weekly`/`monthly`/`quarterly`/`yearly`/`custom`), `billing_interval`, `category_id`, `start_date`, `next_billing_date`, `end_date`, `status`, `user_id` |
+| `subscription` | Recurring payments | `id`, `name`, `amount`, `currency`, `billing_cycle` (`weekly`/`monthly`/`quarterly`/`yearly`/`custom`), `billing_interval`, `category_id`, `start_date`, `next_billing_date`, `end_date`, `status`, `user_id` |
 | `subscription_payment` | Payment history for subscriptions | `id`, `subscription_id`, `amount`, `currency`, `paid_date` |
 
-> Convention: amounts are stored as **positive** numbers; the `type` field (`expense`/`income`) carries meaning. Currency conversion uses `amount_in_preferred` populated at write time.
+> Convention: amounts are stored as **positive** numbers; the `type` field (`expense`/`income`) carries meaning. All amounts are in the user's single chosen `currency` — there is no conversion.
 
 ## 🧭 Project structure
 

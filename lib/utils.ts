@@ -5,23 +5,47 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+let defaultLocale = "en";
+let defaultCurrency = "USD";
+
+/** Set the app-wide formatting locale once from the user's saved settings. */
+export function setDefaultLocale(locale: string) {
+  if (locale) defaultLocale = locale;
+}
+
+export function getDefaultLocale(): string {
+  return defaultLocale;
+}
+
+/** Set the app-wide display currency once from the user's saved settings. The app is single-currency, so every amount renders in this. */
+export function setDefaultCurrency(currency: string) {
+  if (currency) defaultCurrency = currency;
+}
+
+export function getDefaultCurrency(): string {
+  return defaultCurrency;
+}
+
 export function formatCurrency(
   amount: number,
-  currency: string = "USD",
-  locale: string = "en"
+  currency: string = defaultCurrency,
+  locale?: string
 ): string {
-  return new Intl.NumberFormat(locale, {
+  return new Intl.NumberFormat(locale ?? defaultLocale, {
     style: "currency",
     currency,
+    // "JMD 5,000.00" -> "$5,000.00": dollar-variant currencies render with their
+    // narrow symbol instead of the ISO code (the default for shared symbols).
+    currencyDisplay: "narrowSymbol",
   }).format(amount);
 }
 
 export function formatDate(
   date: Date,
-  locale: string = "en",
+  locale?: string,
   options?: Intl.DateTimeFormatOptions
 ): string {
-  return new Intl.DateTimeFormat(locale, {
+  return new Intl.DateTimeFormat(locale ?? defaultLocale, {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -33,6 +57,81 @@ export function generateId(): string {
   return crypto.randomUUID();
 }
 
+/**
+ * A transaction's value for aggregation. Amounts are stored positive in the
+ * workspace's single currency, so totals are plain sums (Math.abs guards the
+ * stored-positive convention defensively).
+ */
+export function txValue(tx: { amount: number }): number {
+  return Math.abs(tx.amount);
+}
+
+/** ISO weeks per month (52/12 ≈ 4.345) — the single source of truth for weekly normalization. */
+export const WEEKS_PER_MONTH = 52 / 12;
+
+/** Start of the calendar window a budget of the given period covers "now" (Sunday-anchored weeks). */
+export function periodWindowStart(
+  period: "weekly" | "monthly" | "yearly",
+  now: Date = new Date()
+): Date {
+  const start = new Date(now);
+  if (period === "weekly") start.setDate(now.getDate() - now.getDay());
+  else if (period === "monthly") start.setDate(1);
+  else start.setMonth(0, 1);
+  start.setHours(0, 0, 0, 0);
+  return start;
+}
+
+type BudgetLike = {
+  categoryId: string | null;
+  period: "weekly" | "monthly" | "yearly";
+  startDate?: string | null;
+  endDate?: string | null;
+};
+
+type TxnLike = {
+  type: string;
+  date: string;
+  categoryId: string | null;
+  amount: number;
+};
+
+/**
+ * The ONE definition of "spent on this budget so far", shared by the
+ * dashboard and the budgets page so both always agree. A budget without a
+ * category counts all expenses.
+ */
+export function computeBudgetSpend(
+  budget: BudgetLike,
+  transactions: TxnLike[],
+  now: Date = new Date()
+): number {
+  const periodStart = periodWindowStart(budget.period, now);
+  const start = budget.startDate
+    ? new Date(Math.max(periodStart.getTime(), new Date(budget.startDate).getTime()))
+    : periodStart;
+  const end = budget.endDate ? new Date(budget.endDate) : null;
+  return transactions.reduce((sum, tx) => {
+    if (tx.type !== "expense") return sum;
+    if (budget.categoryId && tx.categoryId !== budget.categoryId) return sum;
+    const d = new Date(tx.date);
+    if (d < start) return sum;
+    if (end && d > end) return sum;
+    return sum + txValue(tx);
+  }, 0);
+}
+
+/** Budget consumption as a real percentage — NOT capped at 100, so overage is visible. */
+export function budgetPct(spent: number, amount: number): number {
+  return amount > 0 ? Math.round((spent / amount) * 100) : 0;
+}
+
+export function budgetTone(spent: number, amount: number): "success" | "warning" | "danger" {
+  if (spent > amount) return "danger";
+  if (amount > 0 && spent / amount > 0.75) return "warning";
+  return "success";
+}
+
 export function normalizeBillingAmount(
   amount: number,
   cycle: string,
@@ -40,7 +139,7 @@ export function normalizeBillingAmount(
   toCycle: "monthly" | "yearly" = "monthly"
 ): number {
   const monthlyMap: Record<string, number> = {
-    weekly: 4.33,
+    weekly: WEEKS_PER_MONTH,
     monthly: 1,
     quarterly: 1 / 3,
     yearly: 1 / 12,
