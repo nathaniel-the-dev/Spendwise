@@ -310,6 +310,24 @@
   animation-delay: 950ms;
 }
 
+/* Hanko seal: the stamp's rings rotate endlessly — slow enough to read as
+   a living detail, not a spinner. transform-box defaults to view-box for
+   SVG children, so the origin is the seal's centre in viewBox units. */
+@keyframes seal-spin {
+  to { transform: rotate(360deg); }
+}
+
+.seal-spin {
+  transform-origin: 48px 48px;
+  animation: seal-spin 16s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seal-spin {
+    animation: none;
+  }
+}
+
 @keyframes confetti-fall {
   0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
   100% { transform: translateY(60px) rotate(360deg); opacity: 0; }
