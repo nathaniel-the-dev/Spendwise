@@ -3,7 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { DotGrid, Eyebrow } from "@/components/marketing/visuals";
 import {
-  ContourField, InkArc, WatermarkGlyph,
+  ContourField, InkArc,
 } from "@/components/marketing/graphics";
 import { SiteFooter, SiteHeader } from "@/components/marketing/chrome";
 
@@ -35,7 +35,6 @@ export async function ArticlePage({
             <DotGrid className="h-full w-full text-primary/60 opacity-50" />
           </div>
           <ContourField className="pointer-events-none absolute -right-32 -top-24 h-96 w-96 text-primary/10" />
-          <WatermarkGlyph char="§" className="absolute -bottom-6 right-8 hidden text-[10rem] leading-none md:block" />
           <div className="mx-auto max-w-3xl px-4 py-14 md:py-18 relative">
             {eyebrow ?? <Eyebrow>SpendWise</Eyebrow>}
             <h1 className="font-display text-4xl md:text-5xl font-semibold tracking-[-0.02em] leading-[1.05] mt-4 mb-3">
@@ -44,7 +43,7 @@ export async function ArticlePage({
             <p className="text-base text-muted-foreground leading-relaxed max-w-2xl">{lede}</p>
           </div>
           {/* the brush hairline that closes the hero, like the landing's sweep */}
-          <InkArc className="absolute inset-x-0 bottom-0 h-16 w-full text-primary/20" />
+          <InkArc className="absolute inset-x-0 bottom-0 h-3/4 w-full text-primary/20 blur-md" />
         </div>
         <div className={`mx-auto px-4 py-12 md:py-16 ${aside ? "max-w-5xl grid lg:grid-cols-[minmax(0,1fr)_15rem] gap-12 items-start" : "max-w-3xl"}`}>
           <article className="prose-spendwise min-w-0">{children}</article>
