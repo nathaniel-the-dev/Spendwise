@@ -22,7 +22,7 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative flex min-h-screen flex-col lg:grid lg:h-screen lg:grid-cols-[1.05fr_1fr] lg:overflow-hidden">
+    <div className="flex h-dvh flex-col lg:grid lg:grid-cols-[1.05fr_1fr]">
       {/* ── Brand band (desktop) ─────────────────────── */}
       <aside className="relative hidden overflow-hidden bg-band text-band-foreground lg:flex lg:flex-col lg:justify-between lg:p-12 xl:p-16">
         <InkArc className="absolute inset-0 h-full w-full text-band-foreground" />
@@ -74,20 +74,22 @@ export default function AuthLayout({
       </aside>
 
       {/* ── Form panel ─────────────────────────────────
-          The backdrop is viewport-fixed (mobile) / panel-pinned (desktop) so
-          scrolling the form never drags the art along with it. Dots + wash +
-          contour — deliberately not the landing's paper world. */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none fixed inset-0 lg:absolute lg:left-[51%] lg:right-0"
-      >
-        <div className="absolute inset-0 bg-gradient-to-b from-muted/50 via-background to-background" />
-        <DotGrid className="absolute inset-0 h-full w-full text-primary/50 opacity-50" />
-        <ContourField className="absolute -bottom-40 -right-44 h-120 w-120 text-primary/10" />
-      </div>
-      <main className="relative flex flex-1 items-center justify-center px-4 py-10 sm:py-14 lg:overflow-y-auto">
-        <div className="flex w-full justify-center">
-          {children}
+          The art lives inside the (non-scrolling) panel, absolutely pinned to
+          it; only the inner wrapper scrolls. No fixed positioning, no seam,
+          and the backdrop never drags with the form. Dots + wash + contour —
+          deliberately not the landing's paper world. */}
+      <main className="relative flex flex-1 flex-col overflow-hidden">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-gradient-to-b from-muted/50 via-background to-background"
+        >
+          <DotGrid className="absolute inset-0 h-full w-full text-primary/50 opacity-50" />
+          <ContourField className="absolute -bottom-40 -right-44 h-120 w-120 text-primary/10" />
+        </div>
+        <div className="relative flex flex-1 items-center justify-center overflow-y-auto px-4 py-10 sm:py-14">
+          <div className="flex w-full justify-center">
+            {children}
+          </div>
         </div>
       </main>
     </div>
