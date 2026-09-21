@@ -1,7 +1,11 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/marketing/visuals";
+import { cn } from "@/lib/utils";
 
 const navLinks = [
   { href: "/about", label: "About" },
@@ -10,20 +14,30 @@ const navLinks = [
 ];
 
 export function SiteHeader({ session }: { session: { user: { id: string } } | null }) {
+  const pathname = usePathname();
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-4 px-4">
         <Logo />
         <nav aria-label="Pages" className="hidden md:flex items-center gap-1">
-          {navLinks.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className="rounded-lg px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-            >
-              {l.label}
-            </Link>
-          ))}
+          {navLinks.map((l) => {
+            const active = pathname === l.href || pathname.startsWith(`${l.href}/`);
+            return (
+              <Link
+                key={l.href}
+                href={l.href}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "rounded-lg px-3 py-1.5 text-sm transition-colors",
+                  active
+                    ? "bg-primary/10 font-medium text-primary"
+                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                )}
+              >
+                {l.label}
+              </Link>
+            );
+          })}
         </nav>
         <nav aria-label="Account" className="flex items-center gap-2">
           {session ? (
