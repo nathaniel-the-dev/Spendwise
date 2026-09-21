@@ -153,7 +153,7 @@ export default function LoginPage() {
               </Button>
             </div>
           ) : (
-            <form onSubmit={handleForgot} className="space-y-4">
+            <form key="forgot-form" onSubmit={handleForgot} className="space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="forgot-email" className="text-sm">Email</Label>
                 <Input
@@ -179,7 +179,7 @@ export default function LoginPage() {
             </form>
           )
         ) : (
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <form key="signin-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="email" className="text-sm">Email</Label>
             <Input
