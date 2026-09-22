@@ -22,7 +22,7 @@ There is **no** Drizzle, no direct Postgres driver, no NextAuth, no i18n library
 
 ## Environment variables
 
-Only three exist (`.env.local`, see README): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_APP_URL`. Never add secrets or use the `service_role` key — all data access goes through the anon/publishable key with Row Level Security.
+Only three exist (`.env.local`, see README): `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_APP_URL`. Never add secrets or use the `service_role` key — all data access goes through the anon/publishable key with Row Level Security.
 
 ## Architecture rules
 

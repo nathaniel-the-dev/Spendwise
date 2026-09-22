@@ -42,10 +42,10 @@ cp .env.example .env.local
 
 | Variable | Description |
 |----------|-------------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL (Project Settings → API) |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Your Supabase anon/publishable key |
+| `SUPABASE_URL` | Your Supabase project URL (Project Settings → API) |
+| `SUPABASE_PUBLISHABLE_KEY` | Your Supabase anon/publishable key |
 | `NEXT_PUBLIC_APP_URL` | Your app URL (default: `http://localhost:3000`) |
-| `NEXT_PUBLIC_SUPPORT_EMAIL` | Optional support address shown on the Support page |
+| `SUPPORT_EMAIL` | Optional support address shown on the Support page |
 | `GITHUB_FEEDBACK_TOKEN` | Server-only fine-grained PAT (Issues: Write on one repo) used by the Support contact form |
 | `GITHUB_FEEDBACK_REPO` | `owner/repo` the Support form files issues into (default: `nathaniel-the-dev/Spendwise`) |
 
@@ -129,7 +129,7 @@ The app is ready for Vercel deployment.
 
 1. Push the repository to GitHub and import it in Vercel.
 2. Set the environment variables in your Vercel project (see [Environment Variables](#environment-variables)).
-3. Point `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` at your hosted Supabase project and add `NEXT_PUBLIC_APP_URL` to your Supabase Auth redirect allow-list.
+3. Point `SUPABASE_URL` / `SUPABASE_PUBLISHABLE_KEY` at your hosted Supabase project and add `NEXT_PUBLIC_APP_URL` to your Supabase Auth redirect allow-list.
 
 ## 📄 License
 

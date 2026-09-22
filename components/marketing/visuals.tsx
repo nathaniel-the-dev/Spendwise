@@ -4,10 +4,10 @@ import { Coins, Music, ShoppingCart, Zap, DollarSign } from "lucide-react";
 
 /**
  * Support contact shown on the marketing pages. Empty until the operator sets
- * NEXT_PUBLIC_SUPPORT_EMAIL — the Support page hides its email CTA when unset,
+ * SUPPORT_EMAIL — the Support page hides its email CTA when unset,
  * so we never publish an address that doesn't exist.
  */
-export const SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "";
+export const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL ?? "";
 
 export function Logo({ size = "sm" }: { size?: "sm" | "md" }) {
   const dim = size === "sm" ? "h-6 w-6" : "h-8 w-8";
