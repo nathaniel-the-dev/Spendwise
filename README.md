@@ -40,14 +40,15 @@ Copy the example file and fill in your values:
 cp .env.example .env.local
 ```
 
-| Variable | Description |
-|----------|-------------|
-| `SUPABASE_URL` | Your Supabase project URL (Project Settings → API) |
-| `SUPABASE_PUBLISHABLE_KEY` | Your Supabase anon/publishable key |
-| `NEXT_PUBLIC_APP_URL` | Your app URL (default: `http://localhost:3000`) |
-| `SUPPORT_EMAIL` | Optional support address shown on the Support page |
-| `GITHUB_FEEDBACK_TOKEN` | Server-only fine-grained PAT (Issues: Write on one repo) used by the Support contact form |
-| `GITHUB_FEEDBACK_REPO` | `owner/repo` the Support form files issues into (default: `nathaniel-the-dev/Spendwise`) |
+
+| Variable                   | Description                                                                               |
+| ---------------------------- | ------------------------------------------------------------------------------------------- |
+| `SUPABASE_URL`             | Your Supabase project URL (Project Settings → API)                                       |
+| `SUPABASE_PUBLISHABLE_KEY` | Your Supabase anon/publishable key                                                        |
+| `NEXT_PUBLIC_APP_URL`      | Your app URL (default:`http://localhost:3000`)                                            |
+| `SUPPORT_EMAIL`            | Optional support address shown on the Support page                                        |
+| `GITHUB_FEEDBACK_TOKEN`    | Server-only fine-grained PAT (Issues: Write on one repo) used by the Support contact form |
+| `GITHUB_FEEDBACK_REPO`     | `owner/repo` the Support form files issues into (default: `nathaniel-the-dev/Spendwise`)  |
 
 ### Database Setup
 
@@ -65,14 +66,15 @@ Open [http://localhost:3000](http://localhost:3000) and register your first acco
 
 The app reads and writes through Supabase PostgREST. Tables and key columns (all `snake_case`):
 
-| Table | Purpose | Key columns |
-|-------|---------|-------------|
-| `user` | User profile + preferences (managed alongside Supabase `auth.users`) | `id`, `name`, `email`, `preferred_currency`, `locale`, `theme`, `created_at`, `updated_at` |
-| `category` | Custom categories per user | `id`, `name`, `icon`, `color`, `type` (`expense`/`income`), `user_id` |
-| `transaction` | Expense/income entries | `id`, `amount`, `currency`, `description`, `date`, `type`, `category_id`, `user_id`, `tags`, `notes` |
-| `budget` | Spending limits per category | `id`, `amount`, `currency`, `period` (`weekly`/`monthly`/`yearly`), `start_date`, `end_date`, `category_id`, `user_id` |
-| `subscription` | Recurring payments | `id`, `name`, `amount`, `currency`, `billing_cycle` (`weekly`/`monthly`/`quarterly`/`yearly`/`custom`), `billing_interval`, `category_id`, `start_date`, `next_billing_date`, `end_date`, `status`, `user_id` |
-| `subscription_payment` | Payment history for subscriptions | `id`, `subscription_id`, `amount`, `currency`, `paid_date` |
+
+| Table                  | Purpose                                                             | Key columns                                                                                                                                                                                                   |
+| ------------------------ | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `user`                 | User profile + preferences (managed alongside Supabase`auth.users`) | `id`, `name`, `email`, `preferred_currency`, `locale`, `theme`, `created_at`, `updated_at`                                                                                                                    |
+| `category`             | Custom categories per user                                          | `id`, `name`, `icon`, `color`, `type` (`expense`/`income`), `user_id`                                                                                                                                         |
+| `transaction`          | Expense/income entries                                              | `id`, `amount`, `currency`, `description`, `date`, `type`, `category_id`, `user_id`, `tags`, `notes`                                                                                                          |
+| `budget`               | Spending limits per category                                        | `id`, `amount`, `currency`, `period` (`weekly`/`monthly`/`yearly`), `start_date`, `end_date`, `category_id`, `user_id`                                                                                        |
+| `subscription`         | Recurring payments                                                  | `id`, `name`, `amount`, `currency`, `billing_cycle` (`weekly`/`monthly`/`quarterly`/`yearly`/`custom`), `billing_interval`, `category_id`, `start_date`, `next_billing_date`, `end_date`, `status`, `user_id` |
+| `subscription_payment` | Payment history for subscriptions                                   | `id`, `subscription_id`, `amount`, `currency`, `paid_date`                                                                                                                                                    |
 
 > Convention: amounts are stored as **positive** numbers; the `type` field (`expense`/`income`) carries meaning. All amounts are in the user's single chosen `currency` — there is no conversion.
 
@@ -115,13 +117,14 @@ The app reads and writes through Supabase PostgREST. Tables and key columns (all
 
 ## 🔧 Scripts
 
-| Script | Description |
-|--------|-------------|
-| `npm run dev` | Start the dev server |
-| `npm run build` | Production build (type-checks) |
-| `npm run start` | Start the production server |
-| `npm run lint` | Run ESLint |
-| `npm run typecheck` | Run `tsc --noEmit` |
+
+| Script              | Description                    |
+| --------------------- | -------------------------------- |
+| `npm run dev`       | Start the dev server           |
+| `npm run build`     | Production build (type-checks) |
+| `npm run start`     | Start the production server    |
+| `npm run lint`      | Run ESLint                     |
+| `npm run typecheck` | Run`tsc --noEmit`              |
 
 ## 🚢 Deployment
 
@@ -133,4 +136,4 @@ The app is ready for Vercel deployment.
 
 ## 📄 License
 
-MIT
+[MIT](./LICENSE)
