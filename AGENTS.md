@@ -22,7 +22,7 @@ There is **no** Drizzle, no direct Postgres driver, no NextAuth, no i18n library
 
 ## Environment variables
 
-Only three exist (`.env.local`, see README): `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_APP_URL`. Never add secrets or use the `service_role` key — all data access goes through the anon/publishable key with Row Level Security.
+Core vars (`.env.local`, full list in README): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_APP_URL`. The `NEXT_PUBLIC_` prefix is mandatory for the Supabase pair because `lib/supabase/client.ts` runs in the browser — production builds only bundle `NEXT_PUBLIC_`-prefixed vars (dev mode hides this by exposing all env vars to client code). Never add secrets or use the `service_role` key — all data access goes through the anon/publishable key with Row Level Security.
 
 ## Architecture rules
 
