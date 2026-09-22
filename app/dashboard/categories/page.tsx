@@ -54,8 +54,10 @@ export default function CategoriesPage() {
     monthStart.setHours(0, 0, 0, 0);
     for (const cat of categories) {
       const txns = (transactions ?? []).filter((t) => t.categoryId === cat.id);
+      // Match the category's own type, so income categories (e.g. Salary)
+      // sum income transactions instead of always showing 0.
       const thisMonth = txns
-        .filter((t) => t.type === "expense" && new Date(t.date) >= monthStart)
+        .filter((t) => t.type === cat.type && new Date(t.date) >= monthStart)
         .reduce((s, t) => s + txValue(t), 0);
       const budget = (budgets ?? []).find((b) => b.categoryId === cat.id) ?? null;
       map.set(cat.id, { count: txns.length, thisMonth, budget });

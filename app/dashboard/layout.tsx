@@ -39,6 +39,7 @@ import { setDefaultLocale, setDefaultCurrency } from "@/lib/utils";
 import { purgeQueryCache } from "@/lib/query-persistence";
 import { OfflineBanner } from "@/components/shared/offline-banner";
 import { RestoreGate } from "@/components/shared/restore-gate";
+import { QuickAddFab } from "@/components/shared/quick-add-fab";
 import { useEffect, useState } from "react";
 
 const sidebarLinks = [
@@ -76,6 +77,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [headerSearch, setHeaderSearch] = useState("");
   const { data: settings } = useSettings();
+
+  // The sidebar doubles as a mobile overlay. Nav links close it themselves,
+  // but not every navigation goes through them (avatar menu, search, router
+  // pushes) — so any route change closes it unconditionally.
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
 
   // Formatting locale and display currency for the whole dashboard come from the user's settings.
   useEffect(() => {
@@ -242,8 +250,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </Button>
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 pb-24 md:p-6 md:pb-24">{children}</main>
       </div>
+
+      <QuickAddFab />
     </div>
     </RestoreGate>
   );

@@ -10,6 +10,7 @@ import {
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import { OutboxSync } from "@/components/outbox-sync";
+import { AuthCodeRescue } from "@/components/auth-code-rescue";
 import { makeQueryClient } from "@/lib/query-client";
 import {
   createQueryPersister,
@@ -83,6 +84,7 @@ function PersistedQueryTree({
         <TooltipProvider>
           {children}
           <ServiceWorkerRegister />
+          <AuthCodeRescue />
           <OutboxSync />
         </TooltipProvider>
       </ThemeProvider>

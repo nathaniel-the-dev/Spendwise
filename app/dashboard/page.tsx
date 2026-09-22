@@ -304,7 +304,7 @@ export default function DashboardPage() {
                     <Wallet className="h-4 w-4" aria-hidden="true" />
                     Available this month
                   </div>
-                  <p className={`mt-2 text-4xl md:text-5xl font-bold tracking-tight tabular-nums ${available < 0 ? "text-rose-500" : "text-emerald-600 dark:text-emerald-400"}`}>
+                  <p className={`mt-2 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight tabular-nums ${available < 0 ? "text-rose-500" : "text-emerald-600 dark:text-emerald-400"}`}>
                     {formatCurrency(available)}
                   </p>
                   {thisMonth.income > 0 ? (
@@ -357,7 +357,7 @@ export default function DashboardPage() {
                   )}
                 </div>
 
-                <div className="grid grid-cols-3 gap-3 xl:w-60 xl:grid-cols-1">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 xl:w-60 xl:grid-cols-1">
                   {incomeBreakdown.map((item) => (
                     <div key={item.key} className="rounded-lg border bg-card/60 p-3">
                       <p className="text-xs text-muted-foreground">{item.label}</p>
