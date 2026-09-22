@@ -3,7 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { DotGrid, Eyebrow } from "@/components/marketing/visuals";
 import {
-  ContourField, InkArc,
+      ContourField, InkArc,
 } from "@/components/marketing/graphics";
 import { SiteFooter, SiteHeader } from "@/components/marketing/chrome";
 

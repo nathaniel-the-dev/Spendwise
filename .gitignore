@@ -41,3 +41,6 @@ next-env.d.ts
 # local agent / tool data (not part of the app)
 .omo/
 .codegraph
+
+.github
+.impeccable

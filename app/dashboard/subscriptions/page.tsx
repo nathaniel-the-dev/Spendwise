@@ -121,7 +121,7 @@ export default function SubscriptionsPage() {
         <div className="flex justify-center py-12">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-label="Loading subscriptions" />
         </div>
-      ) : isError ? (
+      ) : isError && !subscriptions ? (
         <ErrorState
           title="Couldn't load your subscriptions"
           description="We couldn't reach your data. Nothing was lost — try again."

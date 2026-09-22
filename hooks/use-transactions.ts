@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { readableError } from "@/lib/api-error";
+import { readableError, isOfflineError } from "@/lib/api-error";
+import { addToOutbox } from "@/lib/outbox";
+import { useUser } from "@/components/supabase-provider";
 
 export type Transaction = {
   id: string;
@@ -105,12 +107,49 @@ async function fetchTransactions(filters?: TransactionFilters): Promise<Transact
   return items;
 }
 
-async function createTransaction(data: TransactionInput): Promise<Transaction> {
-  const res = await fetch("/api/transactions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
+/**
+ * Create, with an offline detour: when the request never reached the server
+ * and we know the user, the payload is parked in the outbox (replayed by
+ * <OutboxSync>) and a `queued` placeholder is returned so the success path —
+ * dialog close, toast — still runs normally. Without a user (shouldn't happen
+ * on the dashboard) or on a real API error, the failure propagates as before.
+ */
+async function createTransactionOrQueue(
+  data: TransactionInput,
+  userId: string | undefined
+): Promise<Transaction & { queued?: boolean }> {
+  let res: Response;
+  try {
+    res = await fetch("/api/transactions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+  } catch (err) {
+    if (isOfflineError(err) && userId) {
+      await addToOutbox(userId, {
+        id: crypto.randomUUID(),
+        userId,
+        createdAt: Date.now(),
+        payload: data,
+      });
+      return {
+        id: `queued-${crypto.randomUUID()}`,
+        amount: data.amount,
+        currency: data.currency ?? "USD",
+        description: data.description,
+        date: data.date,
+        type: data.type ?? "expense",
+        categoryId: data.categoryId ?? null,
+        userId,
+        tags: data.tags ?? null,
+        notes: data.notes ?? null,
+        category: null,
+        queued: true,
+      };
+    }
+    throw err;
+  }
   if (!res.ok) {
     throw new Error(await readableError(res, "Couldn't save the transaction. Check the amount and date, then try again."));
   }
@@ -186,12 +225,19 @@ async function restoreTransaction(tx: Transaction): Promise<void> {
 
 export function useCreateTransaction() {
   const qc = useQueryClient();
+  const { user } = useUser();
   return useMutation({
-    mutationFn: createTransaction,
-    onSuccess: () => {
+    mutationFn: (data: TransactionInput) => createTransactionOrQueue(data, user?.id),
+    onSuccess: (tx) => {
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: ["transactions-page"] });
-      toast.success("Transaction created");
+      if (tx.queued) {
+        toast.success("Saved offline", {
+          description: "It'll sync when you're back online.",
+        });
+      } else {
+        toast.success("Transaction created");
+      }
     },
     onError: (err: Error) => toast.error(err.message),
   });

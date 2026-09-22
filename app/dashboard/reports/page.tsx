@@ -435,7 +435,7 @@ export default function ReportsPage() {
         <div className="flex justify-center py-12">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-label="Loading reports" />
         </div>
-      ) : isError ? (
+      ) : isError && !transactions ? (
         <ErrorState
           title="Couldn't load your reports"
           description="We couldn't reach your data. Nothing was lost — try again."

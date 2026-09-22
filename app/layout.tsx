@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Fraunces, IBM_Plex_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { Providers } from "@/components/providers";
@@ -30,7 +30,24 @@ const plexMono = IBM_Plex_Mono({
   variable: "--font-plex-mono",
 });
 
+// PWA: match the browser chrome to the light-theme background (#faf8f5) and
+// let the installed/standalone app draw edge-to-edge under the status bar.
+export const viewport: Viewport = {
+  themeColor: "#faf8f5",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export const metadata: Metadata = {
+  // /manifest.webmanifest is served + linked automatically by app/manifest.ts.
+  manifest: "/manifest.webmanifest",
+  // iOS "Add to Home Screen" polish — hides Safari chrome, status-bar style.
+  appleWebApp: {
+    title: "SpendWise",
+    statusBarStyle: "default",
+    capable: true,
+  },
   title: {
     default: "SpendWise — Budgeting without bank sync",
     template: "%s | SpendWise",

@@ -110,7 +110,7 @@ export default function CategoriesPage() {
         <div className="flex justify-center py-12">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-label="Loading categories" />
         </div>
-      ) : isError ? (
+      ) : isError && !categories ? (
         <ErrorState
           title="Couldn't load your categories"
           description="We couldn't reach your data. Nothing was lost — try again."

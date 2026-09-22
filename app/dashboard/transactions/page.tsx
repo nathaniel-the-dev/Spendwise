@@ -40,7 +40,10 @@ import {
 } from "@/hooks/use-transactions";
 import { useCategories } from "@/hooks/use-categories";
 import { useSettings } from "@/hooks/use-settings";
+import { useOutbox } from "@/hooks/use-outbox";
+import { useUser } from "@/components/supabase-provider";
 import { ErrorState } from "@/components/shared/error-state";
+import { PendingTransactions } from "@/components/shared/pending-transactions";
 import {
   TransactionFormDialog,
   type TransactionFormValues,
@@ -149,6 +152,8 @@ function TransactionsContent() {
 
   const { data: categories } = useCategories();
   const { data: settings } = useSettings();
+  const { user } = useUser();
+  const { items: outboxItems } = useOutbox(user?.id);
   const preferredCurrency = settings?.preferredCurrency ?? "USD";
   const createTransaction = useCreateTransaction();
   const updateTransaction = useUpdateTransaction();
@@ -432,13 +437,13 @@ function TransactionsContent() {
             <div className="flex justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-label="Loading transactions" />
             </div>
-          ) : isError ? (
+          ) : isError && !data && !(page === 1 && outboxItems.length > 0) ? (
             <ErrorState
               title="Couldn't load your transactions"
               description="We couldn't reach your data. Nothing was lost — try again."
               onRetry={refetch}
             />
-          ) : transactions.length === 0 ? (
+          ) : transactions.length === 0 && !(page === 1 && outboxItems.length > 0) ? (
             activeFilterChips.length > 0 ? (
               <div className="text-center py-12 text-muted-foreground px-4">
                 <p className="text-sm mb-1 font-medium text-foreground">No transactions match these filters</p>
@@ -579,7 +584,13 @@ function TransactionsContent() {
                 })}
               </ul>
 
-              {/* Pagination footer */}
+              {/* Queued offline creates appear (muted, "Pending sync") on the
+                  first page until <OutboxSync> replays them. */}
+              {page === 1 && <PendingTransactions currency={preferredCurrency} />}
+
+              {/* Pagination footer — hidden when the page shows only queued
+                  offline rows (nothing server-side to paginate). */}
+              {transactions.length > 0 && (
               <div className="flex flex-col gap-3 border-t bg-muted/20 px-4 py-3 md:flex-row md:items-center md:justify-between">
                 <p className="text-xs text-muted-foreground tabular-nums">
                   Showing {rangeStart}–{rangeEnd} of {total.toLocaleString()} · page spent{" "}
@@ -635,6 +646,7 @@ function TransactionsContent() {
                   </nav>
                 </div>
               </div>
+              )}
             </div>
           )}
         </CardContent>

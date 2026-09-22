@@ -36,6 +36,9 @@ import { createClient } from "@/lib/supabase/client";
 import { Input } from "@/components/ui/input";
 import { useSettings } from "@/hooks/use-settings";
 import { setDefaultLocale, setDefaultCurrency } from "@/lib/utils";
+import { purgeQueryCache } from "@/lib/query-persistence";
+import { OfflineBanner } from "@/components/shared/offline-banner";
+import { RestoreGate } from "@/components/shared/restore-gate";
 import { useEffect, useState } from "react";
 
 const sidebarLinks = [
@@ -85,6 +88,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const initial = name.charAt(0)?.toUpperCase() ?? "U";
 
   return (
+    <RestoreGate>
     <div className="flex h-screen overflow-hidden bg-background">
       <aside
         className={cn(
@@ -178,6 +182,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 onClick={async () => {
                   const supabase = createClient();
                   await supabase.auth.signOut();
+                  // Drop the disposable cached reads so the next account on
+                  // this device never sees them. The offline outbox survives:
+                  // those are this user's unsynced writes, not cache.
+                  await purgeQueryCache();
                   router.push("/");
                 }}
               >
@@ -199,6 +207,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       )}
 
       <div className="flex flex-1 flex-col overflow-hidden">
+        <OfflineBanner />
         <header className="flex h-14 items-center gap-4 border-b bg-background/80 backdrop-blur-md px-4">
           <Button variant="ghost" size="icon" className="h-7 w-7 lg:hidden shrink-0" aria-label="Open navigation" onClick={() => setSidebarOpen(true)}>
             <Menu className="h-4 w-4" />
@@ -236,5 +245,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <main className="flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
       </div>
     </div>
+    </RestoreGate>
   );
 }
