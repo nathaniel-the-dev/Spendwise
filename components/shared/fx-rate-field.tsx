@@ -17,6 +17,8 @@ type Props = {
   rate: number | undefined;
   source: "auto" | "manual";
   onRateChange: (rate: number | undefined, source: "auto" | "manual") => void;
+  /** Validation message shown when a foreign amount has no usable rate. */
+  error?: string;
 };
 
 /**
@@ -36,6 +38,7 @@ export function FxRateField({
   rate,
   source,
   onRateChange,
+  error,
 }: Props) {
   const foreign = isForeignCurrency(currency, preferredCurrency);
   const { data, isLoading, isError } = useExchangeRate(currency, preferredCurrency);
@@ -117,6 +120,8 @@ export function FxRateField({
           </span>
         </p>
       )}
+
+      {error && <p className="text-sm text-destructive">{error}</p>}
     </div>
   );
 }

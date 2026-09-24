@@ -79,6 +79,23 @@ export function isMissingFxColumnError(
   return /amount_in_preferred|fx_rate|fx_source/i.test(error.message ?? "");
 }
 
+/**
+ * A foreign amount cannot be totalled without a rate: saving one without it
+ * stores `amount` with no snapshot, so `txValue()` silently reads it as if it
+ * were already in the preferred currency (5.55 USD counted as 5.55 JMD — off by
+ * a factor of the rate). Returns a message to show the user, or null when the
+ * row is safe to save.
+ */
+export function missingRateMessage(
+  currency: string | null | undefined,
+  preferredCurrency: string | null | undefined,
+  fxRate: number | null | undefined
+): string | null {
+  if (!isForeignCurrency(currency, preferredCurrency)) return null;
+  if (fxRate != null && Number.isFinite(fxRate) && fxRate > 0) return null;
+  return "Enter the exchange rate so this amount is totalled correctly.";
+}
+
 export const FX_MIGRATION_REQUIRED =
   "This workspace still needs the currency-conversion database columns. Run the SQL in docs/currency-conversion.md (Supabase SQL editor), then try again.";
 

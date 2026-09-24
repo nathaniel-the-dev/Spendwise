@@ -26,7 +26,7 @@ import { useSettings } from "@/hooks/use-settings";
 import { CategorySelect } from "@/components/shared/category-select";
 import { CurrencySelect } from "@/components/shared/currency-select";
 import { FxRateField } from "@/components/shared/fx-rate-field";
-import { isForeignCurrency } from "@/lib/fx";
+import { isForeignCurrency, missingRateMessage } from "@/lib/fx";
 import { Loader2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
@@ -105,6 +105,8 @@ export function SubscriptionFormDialog({
     (rate: number | undefined, source: "auto" | "manual") => {
       form.setValue("fxRate", rate, { shouldDirty: true });
       form.setValue("fxSource", source, { shouldDirty: true });
+      // Supplying a usable rate satisfies the submit guard, so retire its message.
+      if (rate != null && rate > 0) form.clearErrors("fxRate");
     },
     [form]
   );
@@ -128,6 +130,17 @@ export function SubscriptionFormDialog({
 
   const expenseCategories = categories?.filter((c) => c.type === "expense") ?? [];
 
+  function handleSubmit(data: SubscriptionFormValues) {
+    // A foreign amount with no rate would be stored without a snapshot and
+    // silently totalled as if it were already in the preferred currency.
+    const rateError = missingRateMessage(data.currency, preferredCurrency, data.fxRate);
+    if (rateError) {
+      form.setError("fxRate", { type: "manual", message: rateError });
+      return;
+    }
+    onSubmit(data);
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[480px]">
@@ -135,7 +148,7 @@ export function SubscriptionFormDialog({
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>Track a recurring subscription.</DialogDescription>
         </DialogHeader>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
@@ -176,6 +189,7 @@ export function SubscriptionFormDialog({
             rate={watchedRate}
             source={watchedSource}
             onRateChange={handleRateChange}
+            error={form.formState.errors.fxRate?.message}
           />
 
           <div className="space-y-2">
