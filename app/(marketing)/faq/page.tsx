@@ -43,7 +43,7 @@ const groups: { title: string; items: { q: string; a: React.ReactNode }[] }[] = 
     items: [
       {
         q: "How does currency work?",
-        a: "You pick one currency in Settings and every amount is entered and totalled in it. SpendWise tracks money in a single currency by design — no conversions, no exchange-rate guesswork, so a total is always exactly the sum of what you logged.",
+        a: "You pick one currency in Settings and everything is totalled in it. If a charge is billed in another currency — a USD subscription on a JMD budget, say — you enter the amount in USD and SpendWise converts it once, at the rate you see (auto-fetched, and editable if your bank used something different). That rate is saved with the entry, so a total is always exactly the sum of what you logged and never shifts with the market.",
       },
       {
         q: "Why does a budget show more than 100%?",

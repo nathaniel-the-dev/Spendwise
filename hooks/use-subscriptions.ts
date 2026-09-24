@@ -19,6 +19,14 @@ export type Subscription = {
   status: "active" | "paused" | "cancelled";
   logo: string | null;
   notes: string | null;
+  /**
+   * Frozen preferred-currency snapshot, present only when `currency` differs
+   * from the user's preferred currency. `txValue()` prefers it over `amount`.
+   */
+  amountInPreferred: number | null;
+  fxRate: number | null;
+  fxRateAt: string | null;
+  fxSource: "auto" | "manual" | null;
   category?: { id: string; name: string; color: string } | null;
 };
 
@@ -28,6 +36,8 @@ export type SubscriptionInput = {
   description?: string | null;
   amount: number;
   currency?: string;
+  fxRate?: number | null;
+  fxSource?: "auto" | "manual" | null;
   billingCycle: "weekly" | "monthly" | "quarterly" | "yearly" | "custom";
   billingInterval?: number;
   categoryId?: string | null;
@@ -56,6 +66,10 @@ type RawSubscription = {
   status: "active" | "paused" | "cancelled";
   logo: string | null;
   notes: string | null;
+  amount_in_preferred?: number | null;
+  fx_rate?: number | null;
+  fx_rate_at?: string | null;
+  fx_source?: string | null;
   created_at: string;
   updated_at: string;
   category?: { id: string; name: string; color: string; icon: string } | null;
@@ -79,6 +93,10 @@ function mapSubscription(raw: RawSubscription): Subscription {
     status: raw.status,
     logo: raw.logo,
     notes: raw.notes,
+    amountInPreferred: raw.amount_in_preferred ?? null,
+    fxRate: raw.fx_rate ?? null,
+    fxRateAt: raw.fx_rate_at ?? null,
+    fxSource: (raw.fx_source as Subscription["fxSource"]) ?? null,
     category: raw.category ?? null,
   };
 }
@@ -132,6 +150,8 @@ async function restoreSubscription(s: Subscription): Promise<void> {
       description: s.description,
       amount: s.amount,
       currency: s.currency,
+      fxRate: s.fxRate,
+      fxSource: s.fxSource,
       billingCycle: s.billingCycle,
       billingInterval: s.billingInterval,
       categoryId: s.categoryId,

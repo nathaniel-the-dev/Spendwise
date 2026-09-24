@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowRight, Circle } from "lucide-react";
 import { categoryIconMap } from "@/components/category-icon";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { isForeignCurrency } from "@/lib/fx";
 import type { Transaction } from "@/hooks/use-transactions";
 
 /**
@@ -20,6 +21,9 @@ type TransactionItem = {
   name: string;
   type: string;
   amount: number;
+  /** The entry's own currency — foreign rows keep their original amount. */
+  currency: string;
+  amountInPreferred: number | null;
   date: string;
   iconKey: string | null;
   color: string | null;
@@ -31,6 +35,8 @@ function toItems(transactions: Transaction[]): TransactionItem[] {
     name: tx.description,
     type: tx.category?.name ?? "Uncategorized",
     amount: tx.type === "expense" ? -Math.abs(tx.amount) : Math.abs(tx.amount),
+    currency: tx.currency,
+    amountInPreferred: tx.amountInPreferred,
     date: tx.date,
     iconKey: tx.category?.icon ?? null,
     color: tx.category?.color ?? null,
@@ -90,7 +96,12 @@ export function TransactionList({
                 }`}
               >
                 {isExpense ? "-" : "+"}
-                {formatCurrency(Math.abs(item.amount), currency)}
+                {formatCurrency(Math.abs(item.amount), item.currency ?? currency)}
+                {isForeignCurrency(item.currency, currency) && item.amountInPreferred != null && (
+                  <span className="ml-1 text-xs font-normal text-muted-foreground">
+                    ≈ {formatCurrency(item.amountInPreferred, currency)}
+                  </span>
+                )}
               </span>
             </li>
           );

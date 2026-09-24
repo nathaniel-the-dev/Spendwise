@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { readableError, isOfflineError } from "@/lib/api-error";
 import { addToOutbox } from "@/lib/outbox";
+import { convertAmount } from "@/lib/fx";
 import { useUser } from "@/components/supabase-provider";
 
 export type Transaction = {
@@ -15,12 +16,22 @@ export type Transaction = {
   userId: string;
   tags: string[] | null;
   notes: string | null;
+  /**
+   * Frozen preferred-currency snapshot, present only when `currency` differs
+   * from the user's preferred currency. `txValue()` prefers it over `amount`.
+   */
+  amountInPreferred: number | null;
+  fxRate: number | null;
+  fxRateAt: string | null;
+  fxSource: "auto" | "manual" | null;
   category?: { id: string; name: string; color: string; icon: string } | null;
 };
 
 export type TransactionInput = {
   amount: number;
   currency?: string;
+  fxRate?: number | null;
+  fxSource?: "auto" | "manual" | null;
   description: string;
   date: string;
   type?: "expense" | "income";
@@ -56,6 +67,10 @@ type RawTransaction = {
   user_id: string;
   tags: string[] | null;
   notes: string | null;
+  amount_in_preferred?: number | null;
+  fx_rate?: number | null;
+  fx_rate_at?: string | null;
+  fx_source?: string | null;
   created_at: string;
   updated_at: string;
   category?: { id: string; name: string; color: string; icon: string } | null;
@@ -73,6 +88,10 @@ function mapTransaction(raw: RawTransaction): Transaction {
     userId: raw.user_id,
     tags: raw.tags,
     notes: raw.notes,
+    amountInPreferred: raw.amount_in_preferred ?? null,
+    fxRate: raw.fx_rate ?? null,
+    fxRateAt: raw.fx_rate_at ?? null,
+    fxSource: (raw.fx_source as Transaction["fxSource"]) ?? null,
     category: raw.category ?? null,
   };
 }
@@ -144,6 +163,10 @@ async function createTransactionOrQueue(
         userId,
         tags: data.tags ?? null,
         notes: data.notes ?? null,
+        amountInPreferred: data.fxRate ? convertAmount(data.amount, data.fxRate) : null,
+        fxRate: data.fxRate ?? null,
+        fxRateAt: null,
+        fxSource: data.fxSource ?? null,
         category: null,
         queued: true,
       };
@@ -212,6 +235,8 @@ async function restoreTransaction(tx: Transaction): Promise<void> {
     body: JSON.stringify({
       amount: tx.amount,
       currency: tx.currency,
+      fxRate: tx.fxRate,
+      fxSource: tx.fxSource,
       description: tx.description,
       date: tx.date,
       type: tx.type,

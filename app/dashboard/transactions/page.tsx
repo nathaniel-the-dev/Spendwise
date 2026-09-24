@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { categoryIconMap } from "@/components/category-icon";
 import { formatCurrency, formatDate, txValue } from "@/lib/utils";
+import { isForeignCurrency } from "@/lib/fx";
 import {
   useTransactions,
   useTransactionsPage,
@@ -223,7 +224,9 @@ function TransactionsContent() {
   function handleSubmit(values: TransactionFormValues, addAnother: boolean) {
     const payload = {
       amount: values.amount,
-      currency: preferredCurrency,
+      currency: values.currency || preferredCurrency,
+      fxRate: values.fxRate ?? null,
+      fxSource: values.fxRate ? (values.fxSource ?? "auto") : null,
       description: values.description,
       date: new Date(values.date).toISOString(),
       type: values.type,
@@ -510,7 +513,12 @@ function TransactionsContent() {
                         </div>
                         <div className={`text-sm font-medium tabular-nums sm:text-right ${tx.type === "income" ? "text-emerald-600 dark:text-emerald-400" : ""}`}>
                           {tx.type === "income" ? "+" : "-"}
-                          {formatCurrency(tx.amount, preferredCurrency)}
+                          {formatCurrency(tx.amount, tx.currency ?? preferredCurrency)}
+                          {isForeignCurrency(tx.currency, preferredCurrency) && tx.amountInPreferred != null && (
+                            <span className="ml-1 text-xs font-normal text-muted-foreground">
+                              ≈ {formatCurrency(tx.amountInPreferred, preferredCurrency)}
+                            </span>
+                          )}
                         </div>
                         <ChevronDown
                           className={`hidden sm:block h-4 w-4 text-muted-foreground transition-transform ${expanded ? "rotate-180" : "group-hover:translate-y-0.5"}`}
@@ -539,7 +547,13 @@ function TransactionsContent() {
                               <div>
                                 <dt className="label-mono text-muted-foreground">Amount</dt>
                                 <dd className="mt-0.5 tabular-nums">
-                                  {formatCurrency(tx.amount, preferredCurrency)}
+                                  {formatCurrency(tx.amount, tx.currency ?? preferredCurrency)}
+                                  {isForeignCurrency(tx.currency, preferredCurrency) && tx.amountInPreferred != null && (
+                                    <span className="ml-1 text-muted-foreground">
+                                      ≈ {formatCurrency(tx.amountInPreferred, preferredCurrency)}
+                                      {tx.fxRate != null && ` @ ${tx.fxRate}`}
+                                    </span>
+                                  )}
                                 </dd>
                               </div>
                               {tx.tags && tx.tags.length > 0 && (
@@ -660,6 +674,9 @@ function TransactionsContent() {
         descriptionSuggestions={descriptionSuggestions}
         defaultValues={editing ? {
           amount: Math.abs(editing.amount),
+          currency: editing.currency,
+          fxRate: editing.fxRate ?? undefined,
+          fxSource: editing.fxSource ?? "auto",
           description: editing.description,
           date: new Date(editing.date).toISOString().split("T")[0],
           type: editing.type,

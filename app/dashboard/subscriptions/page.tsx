@@ -28,6 +28,7 @@ import {
 } from "@/components/shared/subscription-form-dialog";
 import { ErrorState } from "@/components/shared/error-state";
 import { formatCurrency, formatDate, normalizeBillingAmount, txValue } from "@/lib/utils";
+import { isForeignCurrency } from "@/lib/fx";
 
 export default function SubscriptionsPage() {
   const { data: subscriptions, isLoading, isError, refetch } = useSubscriptions();
@@ -48,7 +49,9 @@ export default function SubscriptionsPage() {
       name: data.name,
       provider: data.provider || null,
       amount: data.amount,
-      currency: preferredCurrency,
+      currency: data.currency || preferredCurrency,
+      fxRate: data.fxRate ?? null,
+      fxSource: data.fxRate ? (data.fxSource ?? "auto") : null,
       billingCycle: data.billingCycle,
       billingInterval: data.billingInterval || 1,
       categoryId: data.categoryId || null,
@@ -68,7 +71,9 @@ export default function SubscriptionsPage() {
         name: data.name,
         provider: data.provider || null,
         amount: data.amount,
-        currency: preferredCurrency,
+        currency: data.currency || preferredCurrency,
+        fxRate: data.fxRate ?? null,
+        fxSource: data.fxRate ? (data.fxSource ?? "auto") : null,
         billingCycle: data.billingCycle,
         billingInterval: data.billingInterval || 1,
         categoryId: data.categoryId || null,
@@ -196,7 +201,12 @@ export default function SubscriptionsPage() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div>
-                    <p className="text-2xl font-bold tabular-nums">{formatCurrency(sub.amount, preferredCurrency)}</p>
+                    <p className="text-2xl font-bold tabular-nums">{formatCurrency(sub.amount, sub.currency ?? preferredCurrency)}</p>
+                    {isForeignCurrency(sub.currency, preferredCurrency) && sub.amountInPreferred != null && (
+                      <p className="text-xs text-muted-foreground">
+                        ≈ {formatCurrency(sub.amountInPreferred, preferredCurrency)} per charge
+                      </p>
+                    )}
                     <p className="text-xs text-muted-foreground capitalize">
                       {sub.billingCycle === "custom"
                         ? `Every ${sub.billingInterval} days`
@@ -244,6 +254,9 @@ export default function SubscriptionsPage() {
           name: editing.name,
           provider: editing.provider || "",
           amount: editing.amount,
+          currency: editing.currency,
+          fxRate: editing.fxRate ?? undefined,
+          fxSource: editing.fxSource ?? "auto",
           billingCycle: editing.billingCycle,
           billingInterval: editing.billingInterval,
           categoryId: editing.categoryId || "",
@@ -262,7 +275,7 @@ export default function SubscriptionsPage() {
             <DialogTitle>Delete {deleting?.name ?? "Subscription"}</DialogTitle>
             <DialogDescription>
               {deleting
-                ? `${deleting.name} (${formatCurrency(deleting.amount, preferredCurrency)} ${deleting.billingCycle === "custom" ? `every ${deleting.billingInterval} days` : `per ${deleting.billingCycle}`}) will be removed. You can undo this for 5 seconds after deleting.`
+                ? `${deleting.name} (${formatCurrency(deleting.amount, deleting.currency ?? preferredCurrency)} ${deleting.billingCycle === "custom" ? `every ${deleting.billingInterval} days` : `per ${deleting.billingCycle}`}) will be removed. You can undo this for 5 seconds after deleting.`
                 : ""}
             </DialogDescription>
           </DialogHeader>

@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getAuthContext, handleError } from "@/lib/api-utils";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { FX_MIGRATION_REQUIRED, isMissingFxColumnError, resolveFxUpdate } from "@/lib/fx";
 
 const updateSchema = z.object({
   name: z.string().min(1).optional(),
@@ -9,6 +10,8 @@ const updateSchema = z.object({
   description: z.string().optional().nullable(),
   amount: z.number().finite().positive().optional(),
   currency: z.string().length(3).optional(),
+  fxRate: z.number().finite().positive().optional().nullable(),
+  fxSource: z.enum(["auto", "manual"]).optional().nullable(),
   billingCycle: z.enum(["weekly", "monthly", "quarterly", "yearly", "custom"]).optional(),
   billingInterval: z.number().optional(),
   categoryId: z.string().optional().nullable(),
@@ -94,6 +97,18 @@ export async function PATCH(
     if (parsed.data.status !== undefined) updateData.status = parsed.data.status;
     if (parsed.data.logo !== undefined) updateData.logo = parsed.data.logo;
     if (parsed.data.notes !== undefined) updateData.notes = parsed.data.notes;
+    Object.assign(
+      updateData,
+      resolveFxUpdate({
+        existing,
+        patch: {
+          amount: parsed.data.amount,
+          currency: parsed.data.currency,
+          fxRate: parsed.data.fxRate,
+          fxSource: parsed.data.fxSource,
+        },
+      })
+    );
 
     const { data, error: updateError } = await supabase
       .from("subscription")
@@ -103,6 +118,9 @@ export async function PATCH(
       .single();
 
     if (updateError) {
+      if (isMissingFxColumnError(updateError)) {
+        return NextResponse.json({ error: FX_MIGRATION_REQUIRED }, { status: 400 });
+      }
       console.error("Supabase update error:", updateError);
       return NextResponse.json({ error: "Failed to update subscription" }, { status: 500 });
     }

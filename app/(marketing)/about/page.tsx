@@ -17,7 +17,7 @@ const principles = [
   },
   {
     title: "Money is stored honestly",
-    body: "Amounts are kept exactly as you enter them, in one currency you choose — nothing is estimated, rounded away, or quietly reinterpreted. A total is the sum of what you logged, and a number you can't trust is flagged, not hidden.",
+    body: "Amounts are kept exactly as you enter them — nothing is estimated, rounded away, or quietly reinterpreted. A charge billed in another currency is converted once, at a rate you can see and edit, and that rate is saved with the entry. A total is the sum of what you logged, and a number you can't trust is flagged, not hidden.",
   },
   {
     title: "Reversible beats cautious",

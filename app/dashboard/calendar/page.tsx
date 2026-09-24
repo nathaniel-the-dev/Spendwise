@@ -181,6 +181,9 @@ export default function CalendarPage() {
       editing
         ? {
             amount: Math.abs(editing.amount),
+            currency: editing.currency,
+            fxRate: editing.fxRate ?? undefined,
+            fxSource: editing.fxSource ?? "auto",
             description: editing.description,
             date: dayKey(new Date(editing.date)),
             type: editing.type,
@@ -238,7 +241,9 @@ export default function CalendarPage() {
   function handleSubmit(values: TransactionFormValues, addAnother: boolean) {
     const payload = {
       amount: values.amount,
-      currency,
+      currency: values.currency || currency,
+      fxRate: values.fxRate ?? null,
+      fxSource: values.fxRate ? (values.fxSource ?? "auto") : null,
       description: values.description,
       date: new Date(values.date).toISOString(),
       type: values.type,

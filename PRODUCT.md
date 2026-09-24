@@ -24,13 +24,13 @@ The mechanism a neighbor couldn't copy-paste: privacy-first manual entry — the
 
 ## Operating Context
 
-Manual transaction entry with undoable deletes; custom categories (Lucide icon + color); budgets with weekly/monthly/yearly periods and live spend progress; subscriptions with billing-cycle normalization and upcoming-renewal alerts; reports with donut/bar charts and PDF export; settings for name, currency, and theme. Money is tracked in a single currency per user. Data lives in Supabase Postgres under Row Level Security; email/password or Google auth with a PKCE flow.
+Manual transaction entry with undoable deletes; custom categories (Lucide icon + color); budgets with weekly/monthly/yearly periods and live spend progress; subscriptions with billing-cycle normalization and upcoming-renewal alerts; reports with donut/bar charts and PDF export; settings for name, currency, and theme. Money is totalled in a single preferred currency per user, with foreign-currency entries converted at entry time. Data lives in Supabase Postgres under Row Level Security; email/password or Google auth with a PKCE flow.
 
 ## Capabilities and Constraints
 
 - Stack (binding): Next.js 15 App Router, React 19, TypeScript strict, Tailwind v4, Radix/shadcn-style primitives, TanStack Query, React Hook Form + Zod, Recharts, Supabase for auth AND all data via PostgREST. No ORM, no local migrations (schema managed in the Supabase dashboard), no test runner, no CI, no i18n library.
 - The `user` table supports only name / email / preferred_currency / locale / theme, and there is no DDL access via the anon key — settings that need new columns cannot be backed and must not ship as decorative controls.
-- Money math is P0: totals are plain sums of the stored positive `amount` (single currency); use `txValue()` and the shared budget helpers in `lib/utils.ts`. Multi-currency conversion was removed deliberately — do not reintroduce it.
+- Money math is P0: totals are plain sums of the resolved preferred-currency value — use `txValue()` and the shared budget helpers in `lib/utils.ts`. A foreign-currency entry snapshots its rate at write time (`lib/fx.ts` / `docs/currency-conversion.md`); there is no read-time conversion, so a historical total never changes retroactively.
 - No bank-sync (Plaid or similar) exists or is planned. *Inferred.*
 - Open decision: commercial product vs. open-source portfolio project (MIT, v2.0.0 suggest portfolio posture). Until the founder decides, future work must not add pricing, testimonials, customer counts, or roadmap claims.
 
@@ -51,7 +51,7 @@ Manual transaction entry with undoable deletes; custom categories (Lucide icon +
 ## Product Principles
 
 1. **One number, one decision.** The dashboard answers "what can I spend now" before it decorates.
-2. **Correct money beats clever features.** A total must be exactly the sum of what the user logged; a wrong number is worse than a missing chart. This is why the app is single-currency — no conversion, no estimation.
+2. **Correct money beats clever features.** A total must be exactly the sum of what the user logged; a wrong number is worse than a missing chart. A foreign amount is therefore converted once, at entry, at a rate the user can see and edit — never estimated at render time.
 3. **Manual entry, private by default.** The user's data stays theirs; no sync, no scraping, no hidden telemetry.
 4. **Calm is a feature.** Density is earned by the task; the Kanso voice governs type, color, and motion restraint.
 5. **Delete decorative UI.** A control that can't be backed with real data doesn't ship (precedent: the settings-page cleanup).

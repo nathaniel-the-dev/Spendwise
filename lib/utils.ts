@@ -58,12 +58,16 @@ export function generateId(): string {
 }
 
 /**
- * A transaction's value for aggregation. Amounts are stored positive in the
- * workspace's single currency, so totals are plain sums (Math.abs guards the
- * stored-positive convention defensively).
+ * A row's value for aggregation, expressed in the user's preferred currency.
+ *
+ * Amounts are stored positive. Rows entered in a foreign currency carry a
+ * frozen `amountInPreferred` snapshot (see lib/fx.ts); rows in the preferred
+ * currency carry none and fall back to `amount`. Either way the result is a
+ * plain number, so every total in the app stays a plain sum — this is the one
+ * accessor all aggregation goes through.
  */
-export function txValue(tx: { amount: number }): number {
-  return Math.abs(tx.amount);
+export function txValue(tx: { amount: number; amountInPreferred?: number | null }): number {
+  return Math.abs(tx.amountInPreferred ?? tx.amount);
 }
 
 /** ISO weeks per month (52/12 ≈ 4.345) — the single source of truth for weekly normalization. */
@@ -94,6 +98,8 @@ type TxnLike = {
   date: string;
   categoryId: string | null;
   amount: number;
+  /** Frozen preferred-currency snapshot for foreign-currency rows (lib/fx.ts). */
+  amountInPreferred?: number | null;
 };
 
 /**

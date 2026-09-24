@@ -287,7 +287,8 @@ export default function SettingsPage() {
           <div className="space-y-1.5">
             <Label htmlFor="currency" className="text-sm">Currency</Label>
             <p className="text-xs text-muted-foreground">
-              The currency all your amounts are tracked and displayed in.
+              The currency everything is totalled in. Charges billed in another currency are
+              converted when you enter them, at a rate you can see and edit.
             </p>
             <CurrencySelect
               value={currency}

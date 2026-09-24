@@ -3,10 +3,17 @@ import { getAuthContext, handleError } from "@/lib/api-utils";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { generateId } from "@/lib/utils";
+import {
+  buildFxColumns,
+  FX_MIGRATION_REQUIRED,
+  isMissingFxColumnError,
+} from "@/lib/fx";
 
 const createSchema = z.object({
   amount: z.number().finite().positive(),
   currency: z.string().length(3).optional(),
+  fxRate: z.number().finite().positive().optional().nullable(),
+  fxSource: z.enum(["auto", "manual"]).optional().nullable(),
   description: z.string().min(1),
   date: z.string(),
   type: z.enum(["expense", "income"]).optional(),
@@ -111,8 +118,12 @@ export async function POST(request: Request) {
       );
     }
 
-    const { amount, currency, description, date, type, categoryId, tags, notes } = parsed.data;
+    const { amount, currency, fxRate, fxSource, description, date, type, categoryId, tags, notes } = parsed.data;
     const id = generateId();
+
+    // Foreign amounts carry a frozen preferred-currency snapshot; amounts already
+    // in the preferred currency contribute no fx columns at all.
+    const fxColumns = buildFxColumns({ currency, amount, fxRate, fxSource });
 
     const { data, error: insertError } = await supabase
       .from("transaction")
@@ -127,11 +138,15 @@ export async function POST(request: Request) {
         tags: tags ?? null,
         notes: notes ?? null,
         user_id: userId,
+        ...fxColumns,
       })
       .select("*, category(*)")
       .single();
 
     if (insertError) {
+      if (isMissingFxColumnError(insertError)) {
+        return NextResponse.json({ error: FX_MIGRATION_REQUIRED }, { status: 400 });
+      }
       console.error("Supabase insert error:", insertError);
       return NextResponse.json({ error: "Failed to create transaction" }, { status: 500 });
     }

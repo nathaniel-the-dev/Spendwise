@@ -44,7 +44,10 @@ The `user` table only has `name`, `email`, `preferred_currency`, `locale`, `them
 
 ### Money math (P0-critical conventions)
 - Amounts are stored **positive**; the `type` field (`expense`/`income`) carries meaning.
-- The app tracks money in a **single currency** per user (`preferred_currency` on the `user` row is the display/entry currency). There is NO multi-currency conversion: `amount_in_preferred`, `toPreferred()`, `needsConversion()`, `/api/exchange-rates`, and `hooks/use-exchange-rate.ts` were removed deliberately — do not reintroduce them. Totals are plain sums of `amount`; use `txValue(tx)` (`Math.abs(amount)`) as the single aggregation accessor.
+- The app totals money in **one preferred currency** per user (`preferred_currency` on the `user` row is the display/aggregation currency), but an amount may be **entered** in a foreign currency (e.g. a USD subscription while the workspace tracks JMD). Foreign rows store a **frozen snapshot** — `amount_in_preferred`, `fx_rate`, `fx_rate_at`, `fx_source` — resolved once at write time. See `lib/fx.ts` and `docs/currency-conversion.md`.
+- Aggregation is still a plain sum: `txValue(tx)` is `Math.abs(tx.amountInPreferred ?? tx.amount)`, so every total goes through one accessor and no aggregate needs to know about rates. Rows in the preferred currency carry no snapshot and fall back to `amount`.
+- Conversion is **snapshot-at-write only**. `toPreferred()`, `needsConversion()`, and any *read-time* (render-time) conversion were removed deliberately — do not reintroduce them; a rate resolved during rendering would make totals non-deterministic, drift with the market, and break offline.
+- The fx columns require a one-time SQL run in the Supabase dashboard (there is no migration tooling here). Until it is applied, single-currency writes keep working and foreign writes fail with an explicit message — see `docs/currency-conversion.md`.
 - Budget spend is defined ONCE: `computeBudgetSpend(budget, txns)` + `budgetPct` + `budgetTone` in `lib/utils.ts`, shared by the dashboard and budgets page. `budgetPct` is intentionally uncapped (overages like 128% must show); cap only the `Progress` bar value.
 - Display colors: `--spend` is the spending token (Progress tone + chart fills). Brand green is NOT for spend.
 

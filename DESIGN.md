@@ -230,7 +230,7 @@ Corners run on one rem-based ramp from a 0.625rem base: controls (buttons, nav) 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** display money in Inter `tabular-nums` via `formatCurrency(amount, preferredCurrency)`; the app is single-currency, so a total is a plain sum of stored `amount`.
+- **Do** display money in Inter `tabular-nums` via `formatCurrency(amount, currency)`. Amounts are totalled in the user's preferred currency, so a total is a plain sum of the resolved value (`txValue`). Show a foreign amount in its **own** currency with the converted value as a secondary `≈` value (`US$9.99 ≈ J$1,565`), never instead of it.
 - **Do** use `.label-mono` for every eyebrow, card title, and table header — one label voice.
 - **Do** reserve Fraunces for headings and the wordmark, with optical sizing and the WONK character on.
 - **Do** pick progress/chart outflow colors from `--spend` and state colors from the semantic four.

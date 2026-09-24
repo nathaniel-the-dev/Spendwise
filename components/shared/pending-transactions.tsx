@@ -63,7 +63,7 @@ export function PendingTransactions({ currency = "USD" }: { currency?: string })
               }`}
             >
               {isIncome ? "+" : "-"}
-              {formatCurrency(item.payload.amount, currency)}
+              {formatCurrency(item.payload.amount, item.payload.currency ?? currency)}
             </div>
           </li>
         );

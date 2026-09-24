@@ -22,12 +22,19 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useCategories } from "@/hooks/use-categories";
+import { useSettings } from "@/hooks/use-settings";
 import { CategorySelect } from "@/components/shared/category-select";
+import { CurrencySelect } from "@/components/shared/currency-select";
+import { FxRateField } from "@/components/shared/fx-rate-field";
 import { AutocompleteInput } from "@/components/shared/autocomplete-input";
-import { useEffect, useRef, useState } from "react";
+import { isForeignCurrency } from "@/lib/fx";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const transactionSchema = z.object({
   amount: z.coerce.number().positive("Amount must be positive"),
+  currency: z.string().length(3).optional(),
+  fxRate: z.number().positive().optional(),
+  fxSource: z.enum(["auto", "manual"]).optional(),
   description: z.string().min(1, "Description is required"),
   date: z.string().min(1, "Date is required"),
   type: z.enum(["expense", "income"]),
@@ -60,6 +67,8 @@ export function TransactionFormDialog({
   descriptionSuggestions = [],
 }: Props) {
   const { data: categories } = useCategories();
+  const { data: settings } = useSettings();
+  const preferredCurrency = settings?.preferredCurrency ?? "USD";
   const isEdit = Boolean(defaultValues?.description);
   const [showMore, setShowMore] = useState(false);
   const [addAnother, setAddAnother] = useState(false);
@@ -69,6 +78,7 @@ export function TransactionFormDialog({
     resolver: zodResolver(transactionSchema),
     defaultValues: {
       amount: 0,
+      currency: preferredCurrency,
       description: "",
       date: new Date().toISOString().split("T")[0],
       type: "expense",
@@ -78,15 +88,36 @@ export function TransactionFormDialog({
     },
   });
 
+  const watchedCurrency = form.watch("currency") || preferredCurrency;
+  const watchedAmount = form.watch("amount");
+  const watchedRate = form.watch("fxRate");
+  const watchedSource = form.watch("fxSource") ?? "auto";
+
+  const handleRateChange = useCallback(
+    (rate: number | undefined, source: "auto" | "manual") => {
+      form.setValue("fxRate", rate, { shouldDirty: true });
+      form.setValue("fxSource", source, { shouldDirty: true });
+    },
+    [form]
+  );
+
+  // Switching back to the preferred currency must not leave a stale rate behind.
+  useEffect(() => {
+    if (!isForeignCurrency(watchedCurrency, preferredCurrency)) {
+      form.setValue("fxRate", undefined);
+      form.setValue("fxSource", "auto");
+    }
+  }, [watchedCurrency, preferredCurrency, form]);
+
   useEffect(() => {
     if (open) {
       setShowMore(Boolean(defaultValues?.tags || defaultValues?.notes));
       form.reset({
-        amount: 0, description: "", date: new Date().toISOString().split("T")[0],
+        amount: 0, currency: preferredCurrency, description: "", date: new Date().toISOString().split("T")[0],
         type: "expense", categoryId: "", tags: "", notes: "", ...defaultValues,
       });
     }
-  }, [open, defaultValues, form]);
+  }, [open, defaultValues, preferredCurrency, form]);
 
   // After a "save & add another" mutation lands, the parent keeps the dialog
   // open; clear the per-entry fields but keep type/date/category so
@@ -114,13 +145,33 @@ export function TransactionFormDialog({
           <DialogDescription>{isEdit ? "Update this transaction." : "Record a new transaction."}</DialogDescription>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="amount">Amount</Label>
-            <Input id="amount" type="number" step="0.01" min="0" placeholder="0.00" autoFocus {...form.register("amount")} />
-            {form.formState.errors.amount && (
-              <p className="text-sm text-destructive">{form.formState.errors.amount.message}</p>
-            )}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="amount">Amount</Label>
+              <Input id="amount" type="number" step="0.01" min="0" placeholder="0.00" autoFocus {...form.register("amount")} />
+              {form.formState.errors.amount && (
+                <p className="text-sm text-destructive">{form.formState.errors.amount.message}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="transaction-currency">Currency</Label>
+              <CurrencySelect
+                id="transaction-currency"
+                value={watchedCurrency}
+                onValueChange={(v) => form.setValue("currency", v, { shouldDirty: true })}
+              />
+            </div>
           </div>
+
+          <FxRateField
+            id="transaction-fx-rate"
+            amount={Number(watchedAmount) || 0}
+            currency={watchedCurrency}
+            preferredCurrency={preferredCurrency}
+            rate={watchedRate}
+            source={watchedSource}
+            onRateChange={handleRateChange}
+          />
 
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>

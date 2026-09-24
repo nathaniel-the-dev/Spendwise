@@ -2,10 +2,13 @@ import { createClient } from "@/lib/supabase/server";
 import { getAuthContext, handleError } from "@/lib/api-utils";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { FX_MIGRATION_REQUIRED, isMissingFxColumnError, resolveFxUpdate } from "@/lib/fx";
 
 const updateSchema = z.object({
   amount: z.number().finite().positive().optional(),
   currency: z.string().length(3).optional(),
+  fxRate: z.number().finite().positive().optional().nullable(),
+  fxSource: z.enum(["auto", "manual"]).optional().nullable(),
   description: z.string().min(1).optional(),
   date: z.string().optional(),
   type: z.enum(["expense", "income"]).optional(),
@@ -77,6 +80,18 @@ export async function PATCH(
     if (parsed.data.amount !== undefined) updateData.amount = parsed.data.amount;
     if (parsed.data.currency !== undefined) updateData.currency = parsed.data.currency;
     if (parsed.data.description !== undefined) updateData.description = parsed.data.description;
+    Object.assign(
+      updateData,
+      resolveFxUpdate({
+        existing,
+        patch: {
+          amount: parsed.data.amount,
+          currency: parsed.data.currency,
+          fxRate: parsed.data.fxRate,
+          fxSource: parsed.data.fxSource,
+        },
+      })
+    );
     if (parsed.data.date !== undefined) updateData.date = parsed.data.date;
     if (parsed.data.type !== undefined) updateData.type = parsed.data.type;
     if (parsed.data.categoryId !== undefined) updateData.category_id = parsed.data.categoryId;
@@ -91,6 +106,9 @@ export async function PATCH(
       .single();
 
     if (updateError) {
+      if (isMissingFxColumnError(updateError)) {
+        return NextResponse.json({ error: FX_MIGRATION_REQUIRED }, { status: 400 });
+      }
       console.error("Supabase update error:", updateError);
       return NextResponse.json({ error: "Failed to update transaction" }, { status: 500 });
     }

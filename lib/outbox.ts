@@ -27,6 +27,12 @@ export type OutboxTransaction = {
   payload: {
     amount: number;
     currency?: string;
+    /**
+     * FX snapshot captured at entry. Carried through the queue so an offline
+     * write replays with the rate the user actually saw, not today's rate.
+     */
+    fxRate?: number | null;
+    fxSource?: "auto" | "manual" | null;
     description: string;
     date: string;
     type?: "expense" | "income";
