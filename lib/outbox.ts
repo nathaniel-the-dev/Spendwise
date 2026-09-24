@@ -46,6 +46,23 @@ const KEY_PREFIX = "spendwise-outbox:";
 /** Fired on every outbox mutation so mounted hooks can refetch the list. */
 export const OUTBOX_EVENT = "spendwise:outbox-changed";
 
+/**
+ * Whether a failed replay is worth retrying later, rather than dropping.
+ *
+ * A 4xx usually means the payload is bad (validation, conflict) and retrying
+ * forever would block the queue — but these statuses mean "try again", not
+ * "your data is wrong":
+ *   401/403 — the session/token hadn't refreshed yet
+ *   408     — the request timed out
+ *   429     — rate limited
+ *   5xx     — the server faulted
+ * Dropping a valid write because a token was mid-refresh silently loses the
+ * user's transaction, which is exactly what this queue exists to prevent.
+ */
+export function isRetryableReplayStatus(status: number): boolean {
+  return status === 401 || status === 403 || status === 408 || status === 429 || status >= 500;
+}
+
 function keyFor(userId: string): string {
   return `${KEY_PREFIX}${userId}`;
 }

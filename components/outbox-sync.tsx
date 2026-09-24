@@ -1,13 +1,18 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useUser } from "@/components/supabase-provider";
 import { useOnlineStatus } from "@/hooks/use-online-status";
 import { useOutbox } from "@/hooks/use-outbox";
-import { readOutbox, removeFromOutbox } from "@/lib/outbox";
+import { isRetryableReplayStatus, readOutbox, removeFromOutbox } from "@/lib/outbox";
 import { isOfflineError } from "@/lib/api-error";
+
+/** How many times to auto-retry a deferred (auth/server) replay before leaving it queued. */
+const MAX_DEFERRED_RETRIES = 3;
+/** Delay between deferred replay attempts. */
+const DEFERRED_RETRY_MS = 4000;
 
 /**
  * Replays queued offline transaction creates once the browser is back online.
@@ -27,6 +32,9 @@ export function OutboxSync() {
   const { items } = useOutbox(user?.id);
   const qc = useQueryClient();
   const running = useRef(false);
+  /** Consecutive deferred (auth/server) attempts, reset on any success. */
+  const retries = useRef(0);
+  const [retryTick, setRetryTick] = useState(0);
 
   const userId = user?.id;
   const count = items.length;
@@ -35,12 +43,14 @@ export function OutboxSync() {
     if (!online || !userId || count === 0) return;
 
     let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
 
     async function drain(uid: string) {
       if (running.current) return;
       running.current = true;
       let synced = 0;
       let dropped = false;
+      let deferred = false;
       try {
         // Loop until the queue settles: each pass re-reads the outbox so a
         // concurrent enqueue (a new offline save landing mid-drain) is picked
@@ -63,6 +73,13 @@ export function OutboxSync() {
                 await removeFromOutbox(uid, item.id);
                 synced++;
                 progressed = true;
+                retries.current = 0;
+              } else if (isRetryableReplayStatus(res.status)) {
+                // Auth/session, throttling or a server fault — the payload is
+                // fine, so dropping it would throw away a good write. Stop this
+                // pass and keep it queued for a short retry.
+                deferred = true;
+                break;
               } else {
                 // Real API rejection — not worth retrying; drop + report.
                 await removeFromOutbox(uid, item.id);
@@ -78,6 +95,16 @@ export function OutboxSync() {
           }
           // No item advanced the queue this pass (still offline) → stop.
           if (!progressed) break;
+        }
+
+        // Deferred items mean auth/server trouble rather than a bad payload, so
+        // try again shortly — that's what lets a token refresh land the write
+        // without the user re-entering anything. Bounded, so a genuinely broken
+        // session doesn't spin forever: the entry simply stays queued and the
+        // offline banner keeps showing it.
+        if (deferred && !cancelled && retries.current < MAX_DEFERRED_RETRIES) {
+          retries.current += 1;
+          retryTimer = setTimeout(() => setRetryTick((n) => n + 1), DEFERRED_RETRY_MS);
         }
       } finally {
         running.current = false;
@@ -103,8 +130,9 @@ export function OutboxSync() {
     drain(userId);
     return () => {
       cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
     };
-  }, [online, userId, count, qc]);
+  }, [online, userId, count, qc, retryTick]);
 
   return null;
 }
