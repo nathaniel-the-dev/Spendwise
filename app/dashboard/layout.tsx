@@ -16,6 +16,7 @@ import {
 import {
   LayoutDashboard,
   ArrowLeftRight,
+  CalendarDays,
   Tags,
   PiggyBank,
   RefreshCcw,
@@ -45,6 +46,7 @@ import { useEffect, useState } from "react";
 const sidebarLinks = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/transactions", label: "Transactions", icon: ArrowLeftRight },
+  { href: "/dashboard/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/dashboard/categories", label: "Categories", icon: Tags },
   { href: "/dashboard/budgets", label: "Budgets", icon: PiggyBank },
   { href: "/dashboard/subscriptions", label: "Subscriptions", icon: RefreshCcw },
