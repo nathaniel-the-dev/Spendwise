@@ -93,7 +93,7 @@ export function FxRateField({
             const parsed = Number(raw);
             onRateChange(Number.isFinite(parsed) && parsed > 0 ? parsed : undefined, "manual");
           }}
-          className="h-8 w-28"
+          className="h-8 w-36"
           aria-label={`Exchange rate from ${currency} to ${preferredCurrency}`}
         />
         <span className="text-muted-foreground">{preferredCurrency}</span>
