@@ -27,6 +27,7 @@ import { CategorySelect } from "@/components/shared/category-select";
 import { CurrencySelect } from "@/components/shared/currency-select";
 import { FxRateField } from "@/components/shared/fx-rate-field";
 import { isForeignCurrency } from "@/lib/fx";
+import { Loader2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 const subscriptionSchema = z
@@ -59,6 +60,8 @@ type Props = {
   onSubmit: (data: SubscriptionFormValues) => void;
   defaultValues?: Partial<SubscriptionFormValues>;
   title?: string;
+  /** True while the parent's create/update mutation is in flight. */
+  pending?: boolean;
 };
 
 export function SubscriptionFormDialog({
@@ -67,6 +70,7 @@ export function SubscriptionFormDialog({
   onSubmit,
   defaultValues,
   title = "Add Subscription",
+  pending = false,
 }: Props) {
   const { data: categories } = useCategories();
   const { data: settings } = useSettings();
@@ -278,7 +282,10 @@ export function SubscriptionFormDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit">{isEdit ? "Save" : "Add"}</Button>
+            <Button type="submit" disabled={pending}>
+              {pending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+              {isEdit ? "Save" : "Add"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

@@ -436,7 +436,7 @@ function TransactionsContent() {
         </CardHeader>
 
         <CardContent className="p-0">
-          {isLoading ? (
+          {isLoading || (!data && !isError && !(page === 1 && outboxItems.length > 0)) ? (
             <div className="flex justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-label="Loading transactions" />
             </div>

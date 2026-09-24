@@ -122,7 +122,7 @@ export default function SubscriptionsPage() {
         </Button>
       </div>
 
-      {isLoading ? (
+      {isLoading || (!subscriptions && !isError) ? (
         <div className="flex justify-center py-12">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-label="Loading subscriptions" />
         </div>
@@ -132,7 +132,7 @@ export default function SubscriptionsPage() {
           description="We couldn't reach your data. Nothing was lost — try again."
           onRetry={refetch}
         />
-      ) : !subscriptions?.length ? (
+      ) : subscriptions.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 mb-3">
@@ -249,6 +249,7 @@ export default function SubscriptionsPage() {
       <SubscriptionFormDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
+        pending={createSubscription.isPending || updateSubscription.isPending}
         onSubmit={editing ? handleUpdate : handleCreate}
         defaultValues={editing ? {
           name: editing.name,

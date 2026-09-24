@@ -108,7 +108,7 @@ export default function CategoriesPage() {
         </Button>
       </div>
 
-      {isLoading ? (
+      {isLoading || (!categories && !isError) ? (
         <div className="flex justify-center py-12">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-label="Loading categories" />
         </div>
@@ -118,7 +118,7 @@ export default function CategoriesPage() {
           description="We couldn't reach your data. Nothing was lost — try again."
           onRetry={refetch}
         />
-      ) : !categories?.length ? (
+      ) : categories.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 mb-3">

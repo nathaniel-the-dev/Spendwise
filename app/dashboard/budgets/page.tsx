@@ -106,7 +106,7 @@ export default function BudgetsPage() {
         </Button>
       </div>
 
-      {isLoading ? (
+      {isLoading || (!budgets && !isError) ? (
         <div className="flex justify-center py-12">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-label="Loading budgets" />
         </div>
@@ -116,7 +116,7 @@ export default function BudgetsPage() {
           description="We couldn't reach your data. Nothing was lost — try again."
           onRetry={refetch}
         />
-      ) : !budgets?.length ? (
+      ) : budgets.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 mb-3">

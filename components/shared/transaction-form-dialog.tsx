@@ -28,6 +28,7 @@ import { CurrencySelect } from "@/components/shared/currency-select";
 import { FxRateField } from "@/components/shared/fx-rate-field";
 import { AutocompleteInput } from "@/components/shared/autocomplete-input";
 import { isForeignCurrency } from "@/lib/fx";
+import { Loader2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const transactionSchema = z.object({
@@ -266,7 +267,10 @@ export function TransactionFormDialog({
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button type="submit">{isEdit ? "Save" : addAnother ? "Add & New" : "Add"}</Button>
+              <Button type="submit" disabled={pending}>
+                {pending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+                {isEdit ? "Save" : addAnother ? "Add & New" : "Add"}
+              </Button>
             </div>
           </DialogFooter>
         </form>
