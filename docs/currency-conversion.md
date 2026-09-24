@@ -10,22 +10,24 @@ when the market moves.
 
 ## How it works
 
-| Piece | Where |
-|---|---|
-| Pure helpers (`convertAmount`, `buildFxColumns`, `resolveFxUpdate`) | `lib/fx.ts` |
-| Rate endpoint (free, keyless, includes JMD) | `app/api/exchange-rates/route.ts` |
-| Client rate hook (12h cache, persisted) | `hooks/use-exchange-rate.ts` |
-| Rate input UI (auto-filled, editable) | `components/shared/fx-rate-field.tsx` |
-| The single aggregation accessor | `txValue()` in `lib/utils.ts` |
+
+| Piece                                                               | Where                                 |
+| --------------------------------------------------------------------- | --------------------------------------- |
+| Pure helpers (`convertAmount`, `buildFxColumns`, `resolveFxUpdate`) | `lib/fx.ts`                           |
+| Rate endpoint (free, keyless, includes JMD)                         | `app/api/exchange-rates/route.ts`     |
+| Client rate hook (12h cache, persisted)                             | `hooks/use-exchange-rate.ts`          |
+| Rate input UI (auto-filled, editable)                               | `components/shared/fx-rate-field.tsx` |
+| The single aggregation accessor                                     | `txValue()` in `lib/utils.ts`         |
 
 Each foreign-currency row stores four extra columns:
 
-| Column | Meaning |
-|---|---|
-| `amount_in_preferred` | The resolved amount, rounded to 2dp |
-| `fx_rate` | The rate actually used (`currency` → preferred) |
-| `fx_rate_at` | When that rate was true |
-| `fx_source` | `auto` (fetched) or `manual` (typed by the user) |
+
+| Column                | Meaning                                          |
+| ----------------------- | -------------------------------------------------- |
+| `amount_in_preferred` | The resolved amount, rounded to 2dp              |
+| `fx_rate`             | The rate actually used (`currency` → preferred) |
+| `fx_rate_at`          | When that rate was true                          |
+| `fx_source`           | `auto` (fetched) or `manual` (typed by the user) |
 
 `amount` and `currency` keep the **original** charge, so a row records both sides:
 `US$9.99 @ 156.42 on 2026-09-24`.

@@ -76,7 +76,11 @@ export function FxRateField({
         <Input
           id={id}
           type="number"
-          step="0.0001"
+          // "any", not a fixed step: a fetched rate carries full precision
+          // (e.g. 157.820808 = 6dp). A fixed step trips native constraint
+          // validation, which silently blocks form submission — the submit
+          // handler never runs and no error is ever shown.
+          step="any"
           min="0"
           inputMode="decimal"
           value={rate ?? ""}
