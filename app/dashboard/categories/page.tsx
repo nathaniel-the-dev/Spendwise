@@ -168,6 +168,7 @@ export default function CategoriesPage() {
       <CategoryFormDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
+        pending={createCategory.isPending || updateCategory.isPending}
         onSubmit={editing ? handleUpdate : handleCreate}
         defaultValues={editing ? { name: editing.name, icon: editing.icon, color: editing.color, type: editing.type } : undefined}
         title={editing ? "Edit Category" : "Create Category"}

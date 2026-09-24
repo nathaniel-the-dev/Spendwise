@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { categoryIcons, categoryColors } from "@/lib/utils";
 import { CategoryIcon } from "@/components/category-icon";
+import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 
 const categorySchema = z.object({
@@ -40,6 +41,8 @@ type Props = {
   onSubmit: (data: CategoryFormValues) => void;
   defaultValues?: Partial<CategoryFormValues>;
   title?: string;
+  /** True while the parent's create/update mutation is in flight. */
+  pending?: boolean;
 };
 
 export function CategoryFormDialog({
@@ -48,6 +51,7 @@ export function CategoryFormDialog({
   onSubmit,
   defaultValues,
   title = "Create Category",
+  pending = false,
 }: Props) {
   const form = useForm<CategoryFormValues>({
     resolver: zodResolver(categorySchema),
@@ -139,7 +143,10 @@ export function CategoryFormDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit">{defaultValues?.name ? "Save" : "Add"}</Button>
+            <Button type="submit" disabled={pending}>
+              {pending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+              {defaultValues?.name ? "Save" : "Add"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

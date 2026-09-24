@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { useCategories } from "@/hooks/use-categories";
 import { CategorySelect } from "@/components/shared/category-select";
+import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 
 const budgetSchema = z
@@ -46,6 +47,8 @@ type Props = {
   onSubmit: (data: BudgetFormValues) => void;
   defaultValues?: Partial<BudgetFormValues>;
   title?: string;
+  /** True while the parent's create/update mutation is in flight. */
+  pending?: boolean;
 };
 
 export function BudgetFormDialog({
@@ -54,6 +57,7 @@ export function BudgetFormDialog({
   onSubmit,
   defaultValues,
   title = "Create Budget",
+  pending = false,
 }: Props) {
   const { data: categories } = useCategories();
   const form = useForm<BudgetFormValues>({
@@ -147,7 +151,10 @@ export function BudgetFormDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit">{defaultValues?.categoryId ? "Save" : "Add"}</Button>
+            <Button type="submit" disabled={pending}>
+              {pending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+              {defaultValues?.categoryId ? "Save" : "Add"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

@@ -203,6 +203,7 @@ export default function BudgetsPage() {
       <BudgetFormDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
+        pending={createBudget.isPending || updateBudget.isPending}
         onSubmit={editing ? handleUpdate : handleCreate}
         defaultValues={editing ? {
           categoryId: editing.categoryId || "",
