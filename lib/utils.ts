@@ -73,6 +73,73 @@ export function txValue(tx: { amount: number; amountInPreferred?: number | null 
 /** ISO weeks per month (52/12 ≈ 4.345) — the single source of truth for weekly normalization. */
 export const WEEKS_PER_MONTH = 52 / 12;
 
+/** Days in a month, with `month` 0-indexed. Leap-year aware. */
+function daysInMonth(year: number, month: number): number {
+  return new Date(year, month + 1, 0).getDate();
+}
+
+/**
+ * The window of the "financial month" containing `now` — the pay cycle for
+ * users paid mid/end of month, and the plain calendar month for everyone else.
+ *
+ * With a `payday` set the cycle runs from that day of the month to the day
+ * before the same day next month, so someone paid on the 28th sees the
+ * 28th → 27th, and income lands on the first day of the window instead of
+ * sitting at $0 for a month. `null` (or 1) keeps the calendar month, which is
+ * what the app did before this setting existed.
+ *
+ * Day numbers past the end of a short month clamp down rather than rolling
+ * over: a payday of 31 yields Feb 28/29, not Mar 3. `new Date(y, m, 31)`
+ * would silently overflow, so the day is always min'd against the real length.
+ */
+export function payCycleWindow(
+  now: Date = new Date(),
+  payday?: number | null
+): { start: Date; end: Date } {
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+
+  // No payday, or the 1st — the calendar month, unchanged from before.
+  if (payday == null || payday <= 1) {
+    const start = new Date(today.getFullYear(), today.getMonth(), 1);
+    const end = new Date(today.getFullYear(), today.getMonth(), daysInMonth(today.getFullYear(), today.getMonth()), 23, 59, 59, 999);
+    return { start, end };
+  }
+
+  const day = Math.min(Math.max(Math.floor(payday), 1), 31);
+  const y = today.getFullYear();
+  const m = today.getMonth();
+
+  // Anchor within this month if we've reached it, otherwise the cycle we're
+  // currently inside started in the previous month.
+  const reachedPayday = today.getDate() >= Math.min(day, daysInMonth(y, m));
+  const anchorMonth = reachedPayday ? m : m - 1;
+  const anchorYear = today.getFullYear() + Math.floor(anchorMonth / 12);
+  const normalizedMonth = ((anchorMonth % 12) + 12) % 12;
+
+  const start = new Date(
+    anchorYear,
+    normalizedMonth,
+    Math.min(day, daysInMonth(anchorYear, normalizedMonth))
+  );
+  start.setHours(0, 0, 0, 0);
+
+  const nextMonth = normalizedMonth + 1;
+  const nextYear = anchorYear + Math.floor(nextMonth / 12);
+  const normalizedNextMonth = nextMonth % 12;
+  const end = new Date(
+    nextYear,
+    normalizedNextMonth,
+    Math.min(day, daysInMonth(nextYear, normalizedNextMonth)) - 1,
+    23,
+    59,
+    59,
+    999
+  );
+
+  return { start, end };
+}
+
 /** Start of the calendar window a budget of the given period covers "now" (Sunday-anchored weeks). */
 export function periodWindowStart(
   period: "weekly" | "monthly" | "yearly",

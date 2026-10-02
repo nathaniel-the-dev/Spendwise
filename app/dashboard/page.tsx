@@ -12,7 +12,7 @@ import { ArrowRight, AlertTriangle, RefreshCcw, Plus, Wallet, Lightbulb, Sprout,
 import { TransactionList } from "@/components/transaction-list";
 import { SpendingChart } from "@/components/spending-chart";
 import { ErrorState } from "@/components/shared/error-state";
-import { formatCurrency, normalizeBillingAmount, txValue, computeBudgetSpend, budgetPct, budgetTone, periodWindowStart } from "@/lib/utils";
+import { formatCurrency, formatDate, normalizeBillingAmount, txValue, computeBudgetSpend, budgetPct, budgetTone, periodWindowStart, payCycleWindow } from "@/lib/utils";
 import { useTransactions } from "@/hooks/use-transactions";
 import { useSubscriptions } from "@/hooks/use-subscriptions";
 import { useBudgets } from "@/hooks/use-budgets";
@@ -38,6 +38,7 @@ export default function DashboardPage() {
   const { data: settings } = useSettings();
 
   const preferredCurrency = settings?.preferredCurrency ?? "USD";
+  const payday = settings?.payday ?? null;
 
   const isLoading = txLoading || subLoading || budgetLoading;
   const loadError = txError || subError || budgetError;
@@ -51,15 +52,18 @@ export default function DashboardPage() {
   const hour = now.getHours();
   const name = user?.name?.split(" ")[0] ?? "there";
 
+  // The window the headline number actually covers — shown so a pay-cycle user
+  // can see it runs 28th → 27th rather than a calendar month. With no payday
+  // set this is the calendar month, so it's left unlabelled as before.
+  const cycle = payCycleWindow(now, payday);
+  const cycleLabel = (() => {
+    const fmt = (d: Date) => formatDate(d, undefined, { month: "short", day: "numeric" });
+    return fmt(cycle.start) === fmt(cycle.end) ? fmt(cycle.start) : `${fmt(cycle.start)} – ${fmt(cycle.end)}`;
+  })();
+
   const thisMonth = useMemo(() => {
     if (!transactions) return { expenses: 0, income: 0, count: 0 };
-    const start = new Date();
-    start.setDate(1);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date();
-    end.setMonth(end.getMonth() + 1);
-    end.setDate(0);
-    end.setHours(23, 59, 59, 999);
+    const { start, end } = payCycleWindow(now, payday);
     return transactions.reduce(
       (acc, tx) => {
         const d = new Date(tx.date);
@@ -72,7 +76,7 @@ export default function DashboardPage() {
       },
       { expenses: 0, income: 0, count: 0 }
     );
-  }, [transactions]);
+  }, [transactions, payday]);
 
   const thisWeek = useMemo(() => {
     if (!transactions) return { expenses: 0, count: 0 };
@@ -95,24 +99,25 @@ export default function DashboardPage() {
 
   const lastMonth = useMemo(() => {
     if (!transactions) return { expenses: 0 };
-    const start = new Date();
-    start.setMonth(start.getMonth() - 1);
-    start.setDate(1);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date();
-    end.setDate(0);
-    end.setHours(23, 59, 59, 999);
+    // The cycle immediately preceding the current one, derived by asking the
+    // helper about the day before this cycle starts — so it is always the same
+    // length cycle one month earlier (a 28→27 month, not a 28→31), and it stays
+    // correct across short months and year boundaries without date arithmetic
+    // here. With no payday set this is the previous calendar month, unchanged.
+    const dayBeforeStart = new Date(payCycleWindow(now, payday).start);
+    dayBeforeStart.setDate(dayBeforeStart.getDate() - 1);
+    const { start: prevStart, end: prevEnd } = payCycleWindow(dayBeforeStart, payday);
     return transactions.reduce(
       (acc, tx) => {
         const d = new Date(tx.date);
-        if (d >= start && d <= end && tx.type === "expense") {
+        if (d >= prevStart && d <= prevEnd && tx.type === "expense") {
           acc.expenses += txValue(tx);
         }
         return acc;
       },
       { expenses: 0 }
     );
-  }, [transactions]);
+  }, [transactions, payday]);
 
   const insightMessages = useMemo(() => {
     const msgs: string[] = [];
@@ -303,6 +308,11 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                     <Wallet className="h-4 w-4" aria-hidden="true" />
                     Available this month
+                    {payday != null && payday > 1 && (
+                      <span className="text-xs font-normal text-muted-foreground/70">
+                        · {cycleLabel}
+                      </span>
+                    )}
                   </div>
                   <p className={`mt-2 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight tabular-nums ${available < 0 ? "text-rose-500" : "text-emerald-600 dark:text-emerald-400"}`}>
                     {formatCurrency(available)}

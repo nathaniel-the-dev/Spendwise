@@ -7,6 +7,8 @@ export type Settings = {
   preferredCurrency: string;
   locale: string;
   theme: string;
+  /** Day of month the financial month begins; null/undefined = calendar month. */
+  payday: number | null;
 };
 
 type RawSettings = {
@@ -16,6 +18,7 @@ type RawSettings = {
   preferred_currency?: string;
   locale?: string;
   theme?: string;
+  payday?: number | null;
 };
 
 function mapSettings(raw: RawSettings): Settings {
@@ -26,6 +29,7 @@ function mapSettings(raw: RawSettings): Settings {
     preferredCurrency: raw.preferred_currency ?? "USD",
     locale: raw.locale ?? "en",
     theme: raw.theme ?? "system",
+    payday: raw.payday ?? null,
   };
 }
 

@@ -12,6 +12,13 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CurrencySelect } from "@/components/shared/currency-select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { AvatarPicker } from "@/components/shared/avatar-picker";
 import { TwoFactorCard } from "@/components/shared/two-factor-card";
 import { useUser } from "@/components/supabase-provider";
@@ -23,10 +30,17 @@ const themeOptions = [
   { value: "system", label: "System", icon: Monitor },
 ] as const;
 
+/** "2nd", "3rd", "21st" — the only English ordinals that aren't +th. */
+function ordinalSuffix(day: number): string {
+  if (day % 100 >= 11 && day % 100 <= 13) return "th";
+  return day % 10 === 1 ? "st" : day % 10 === 2 ? "nd" : day % 10 === 3 ? "rd" : "th";
+}
+
 type Profile = {
   name?: string;
   preferred_currency?: string;
   theme?: string;
+  payday?: number | null;
 };
 
 export default function SettingsPage() {
@@ -37,6 +51,8 @@ export default function SettingsPage() {
   const [name, setName] = useState(user?.name ?? "");
   const [currency, setCurrency] = useState("USD");
   const [themePref, setThemePref] = useState<string>("system");
+  // null = calendar month (the default, and the pre-pay-cycle behaviour).
+  const [payday, setPayday] = useState<number | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [savingName, setSavingName] = useState(false);
@@ -57,6 +73,7 @@ export default function SettingsPage() {
         if (!active) return;
         if (data.name) setName(data.name);
         if (data.preferred_currency) setCurrency(data.preferred_currency);
+        setPayday(typeof data.payday === "number" ? data.payday : null);
         if (data.theme) {
           setThemePref(data.theme);
           setTheme(data.theme);
@@ -145,6 +162,14 @@ export default function SettingsPage() {
     setThemePref(value);
     setTheme(value);
     persist({ theme: value }, "Theme updated");
+  }
+
+  function handlePaydayChange(value: string) {
+    // The sentinel keeps "calendar month" selectable: 0 = no payday, and it is
+    // persisted as null so the column is genuinely unset rather than 0.
+    const next = value === "0" ? null : Number(value);
+    setPayday(next);
+    persist({ payday: next }, next === null ? "Back to calendar month" : "Pay cycle saved");
   }
 
   async function handleChangePassword(formData: FormData) {
@@ -297,6 +322,31 @@ export default function SettingsPage() {
               disabled={loading}
               triggerClassName="max-w-xs"
             />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="payday" className="text-sm">Pay cycle</Label>
+            <p className="text-xs text-muted-foreground">
+              If you&apos;re paid after the month starts, set your payday so the overview counts
+              from then instead of the 1st — otherwise your income reads $0 until pay day.
+              Leave on &ldquo;Calendar month&rdquo; if payday is your normal start.
+            </p>
+            <Select value={payday == null ? "0" : String(payday)} onValueChange={handlePaydayChange} disabled={loading}>
+              <SelectTrigger id="payday" className="max-w-xs" aria-label="Pay cycle start day">
+                <SelectValue placeholder="Calendar month" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">Calendar month (1st)</SelectItem>
+                {Array.from({ length: 27 }, (_, i) => i + 2).map((day) => (
+                  <SelectItem key={day} value={String(day)}>
+                    {day}{ordinalSuffix(day)}
+                  </SelectItem>
+                ))}
+                <SelectItem value="29">29th</SelectItem>
+                <SelectItem value="30">30th</SelectItem>
+                <SelectItem value="31">31st</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>

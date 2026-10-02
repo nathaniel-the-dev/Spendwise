@@ -9,6 +9,10 @@ const profileSchema = z.object({
   locale: z.enum(["en", "es"]).optional(),
   theme: z.enum(["light", "dark", "system"]).optional(),
   avatarUrl: z.string().url().optional(),
+  // Day of the month the user's financial month begins (their payday).
+  // `null` means "use the calendar month" — the pre-pay-cycle behaviour.
+  // Nullable so the setting can be cleared back to the default.
+  payday: z.number().int().min(1).max(31).nullable().optional(),
 });
 
 export async function GET() {
@@ -16,18 +20,29 @@ export async function GET() {
     const { userId } = await getAuthContext();
     const supabase = await createClient();
 
-    const { data, error } = await supabase
-      .from("user")
-      .select("id, name, email, preferred_currency, locale, theme")
-      .eq("id", userId)
-      .maybeSingle();
+    const selectColumns = async (columns: string) => {
+      const { data, error } = await supabase
+        .from("user")
+        .select(columns)
+        .eq("id", userId)
+        .maybeSingle();
+      return { data, error };
+    };
 
-    if (error) {
-      console.error("Settings fetch error:", error);
+    // PostgREST rejects an explicit column list that names a column the table
+    // doesn't have, so selecting `payday` before the one-time SQL has been run
+    // (see docs/pay-cycle.md) would 500 this endpoint for every user. Retry
+    // without it so the app works both before and after the migration; the
+    // client treats an absent `payday` as the calendar-month default.
+    const withPayday = await selectColumns("id, name, email, preferred_currency, locale, theme, payday");
+    const result = withPayday.error ? await selectColumns("id, name, email, preferred_currency, locale, theme") : withPayday;
+
+    if (result.error) {
+      console.error("Settings fetch error:", result.error);
       return NextResponse.json({ error: "Failed to load settings" }, { status: 500 });
     }
 
-    return NextResponse.json(data ?? {});
+    return NextResponse.json(result.data ?? {});
   } catch (error) {
     return handleError(error);
   }
@@ -71,6 +86,9 @@ export async function PATCH(request: Request) {
       updateData.preferred_currency = parsed.data.preferredCurrency;
     if (parsed.data.locale !== undefined) updateData.locale = parsed.data.locale;
     if (parsed.data.theme !== undefined) updateData.theme = parsed.data.theme;
+    // Checked against `undefined`, not truthiness — `null` is a meaningful value
+    // here (reset to the calendar month) and must reach the database.
+    if (parsed.data.payday !== undefined) updateData.payday = parsed.data.payday;
 
     const { data, error } = await supabase
       .from("user")
@@ -81,6 +99,14 @@ export async function PATCH(request: Request) {
 
     if (error) {
       console.error("Settings update error:", error);
+      // The column doesn't exist until the one-time SQL in docs/pay-cycle.md is
+      // run — surface that as an actionable message rather than a bare 500.
+      if (parsed.data.payday !== undefined && /payday|column|schema/i.test(error.message)) {
+        return NextResponse.json(
+          { error: "Couldn't save the pay cycle — its database column hasn't been created yet." },
+          { status: 500 }
+        );
+      }
       return NextResponse.json({ error: "Failed to update settings" }, { status: 500 });
     }
 
