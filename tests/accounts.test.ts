@@ -7,6 +7,7 @@ import {
   transferValue,
   netWorth,
   isMissingAccountTableError,
+  isMissingAccountsColumnError,
 } from "@/lib/accounts";
 
 /**
@@ -224,6 +225,72 @@ describe("isMissingAccountTableError", () => {
     // as a missing-table signal would break every ledger read.
     assert.equal(
       isMissingAccountTableError({ message: "invalid input syntax for account_id" }),
+      false
+    );
+  });
+});
+
+describe("isMissingAccountsColumnError", () => {
+  test("detects the account_id column missing from transaction", () => {
+    // The exact shape production returned before the migration was applied.
+    assert.equal(
+      isMissingAccountsColumnError({
+        code: "42703",
+        message: "column transaction.account_id does not exist",
+      }),
+      true
+    );
+  });
+
+  test("detects a missing embed relationship", () => {
+    assert.equal(
+      isMissingAccountsColumnError({
+        code: "PGRST200",
+        message:
+          "Could not find a relationship between 'transaction' and 'account' in the schema cache",
+      }),
+      true
+    );
+  });
+
+  test("detects a missing account_id in a write payload", () => {
+    assert.equal(
+      isMissingAccountsColumnError({
+        code: "PGRST204",
+        message: "Could not find the 'account_id' column of 'transaction' in the schema cache",
+      }),
+      true
+    );
+  });
+
+  test("does NOT fire on an unrelated missing column", () => {
+    // A PGRST204 for some other column must keep its 500 rather than being
+    // reported as an accounts migration problem.
+    assert.equal(
+      isMissingAccountsColumnError({
+        code: "PGRST204",
+        message: "Could not find the 'color' column of 'account' in the schema cache",
+      }),
+      false,
+      "a missing 'account' table column is not evidence the migration is absent"
+    );
+    assert.equal(
+      isMissingAccountsColumnError({
+        code: "PGRST204",
+        message: "Could not find the 'nickname' column of 'user' in the schema cache",
+      }),
+      false
+    );
+    assert.equal(isMissingAccountsColumnError({ code: "42501" }), false);
+    assert.equal(isMissingAccountsColumnError(null), false);
+  });
+
+  test("does not claim an fx-column failure", () => {
+    assert.equal(
+      isMissingAccountsColumnError({
+        code: "42703",
+        message: "column transaction.amount_in_preferred does not exist",
+      }),
       false
     );
   });

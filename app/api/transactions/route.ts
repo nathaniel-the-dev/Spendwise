@@ -8,7 +8,11 @@ import {
   FX_MIGRATION_REQUIRED,
   isMissingFxColumnError,
 } from "@/lib/fx";
-import { ACCOUNT_MIGRATION_REQUIRED, isMissingAccountTableError } from "@/lib/accounts";
+import {
+  ACCOUNT_MIGRATION_REQUIRED,
+  isMissingAccountTableError,
+  isMissingAccountsColumnError,
+} from "@/lib/accounts";
 
 const createSchema = z.object({
   amount: z.number().finite().positive(),
@@ -26,6 +30,8 @@ const createSchema = z.object({
 
 /** `account` embed so the ledger can label which account a row landed in. */
 const TRANSACTION_SELECT = "*, category(*), account(*)";
+/** Fallback used when the accounts migration hasn't been applied yet. */
+const TRANSACTION_SELECT_NO_ACCOUNT = "*, category(*)";
 
 export async function GET(request: Request) {
   try {
@@ -48,64 +54,80 @@ export async function GET(request: Request) {
     const limit = Math.min(Math.max(parseInt(url.searchParams.get("limit") ?? "50") || 50, 1), 200);
     const offset = Math.max(parseInt(url.searchParams.get("offset") ?? "0") || 0, 0);
 
-    let query = supabase
-      .from("transaction")
-      .select(TRANSACTION_SELECT, { count: "exact" })
-      .eq("user_id", userId);
+    // The `account(*)` embed and `account_id` filters need the accounts migration. Until it is
+    // applied the ledger must still load, so the query is rebuilt without them instead of 500-ing.
+    const needsAccounts = Boolean(accountId) || unassigned === "true";
 
-    if (sort === "amount") {
-      query = query.order("amount", { ascending: dir === "asc" });
-    } else {
-      query = query.order("date", { ascending: dir === "asc" });
+    const buildQuery = (select: string, withAccounts: boolean) => {
+      let query = supabase
+        .from("transaction")
+        .select(select, { count: "exact" })
+        .eq("user_id", userId);
+      if (sort === "amount") {
+        query = query.order("amount", { ascending: dir === "asc" });
+      } else {
+        query = query.order("date", { ascending: dir === "asc" });
+      }
+      query = query.order("created_at", { ascending: false }).range(offset, offset + limit - 1);
+
+      if (search) {
+        query = query.or(`description.ilike.%${search}%,notes.ilike.%${search}%`);
+      }
+
+      if (categoryId) {
+        query = query.eq("category_id", categoryId);
+      }
+
+      if (type) {
+        query = query.eq("type", type);
+      }
+
+      if (startDate) {
+        query = query.gte("date", startDate);
+      }
+
+      if (endDate) {
+        query = query.lte("date", endDate);
+      }
+
+      if (minAmount) {
+        query = query.gte("amount", parseFloat(minAmount));
+      }
+
+      if (maxAmount) {
+        query = query.lte("amount", parseFloat(maxAmount));
+      }
+
+      if (uncategorized === "true") {
+        query = query.is("category_id", null);
+      }
+
+      if (withAccounts && accountId) {
+        query = query.eq("account_id", accountId);
+      }
+
+      // Rows that predate accounts, or whose account was deleted, live here.
+      if (withAccounts && unassigned === "true") {
+        query = query.is("account_id", null);
+      }
+
+      if (tag) {
+        query = query.contains("tags", [tag]);
+      }
+
+      return query;
+    };
+
+    let { data, error: queryError, count } = await buildQuery(TRANSACTION_SELECT, true);
+
+    if (queryError && isMissingAccountsColumnError(queryError)) {
+      if (needsAccounts) {
+        // The caller filtered by account, so an unfiltered ledger would be the wrong answer.
+        return NextResponse.json({ error: ACCOUNT_MIGRATION_REQUIRED }, { status: 400 });
+      }
+      console.warn("accounts migration not applied; serving transactions without account embed");
+      ({ data, error: queryError, count } = await buildQuery(TRANSACTION_SELECT_NO_ACCOUNT, false));
     }
-    query = query.order("created_at", { ascending: false }).range(offset, offset + limit - 1);
-
-    if (search) {
-      query = query.or(`description.ilike.%${search}%,notes.ilike.%${search}%`);
-    }
-
-    if (categoryId) {
-      query = query.eq("category_id", categoryId);
-    }
-
-    if (type) {
-      query = query.eq("type", type);
-    }
-
-    if (startDate) {
-      query = query.gte("date", startDate);
-    }
-
-    if (endDate) {
-      query = query.lte("date", endDate);
-    }
-
-    if (minAmount) {
-      query = query.gte("amount", parseFloat(minAmount));
-    }
-
-    if (maxAmount) {
-      query = query.lte("amount", parseFloat(maxAmount));
-    }
-
-    if (uncategorized === "true") {
-      query = query.is("category_id", null);
-    }
-
-    if (accountId) {
-      query = query.eq("account_id", accountId);
-    }
-
-    // Rows that predate accounts, or whose account was deleted, live here.
-    if (unassigned === "true") {
-      query = query.is("account_id", null);
-    }
-
-    if (tag) {
-      query = query.contains("tags", [tag]);
-    }
-
-    const { data, error: queryError, count } = await query;
 
     if (queryError) {
       if (isMissingAccountTableError(queryError)) {

@@ -126,6 +126,33 @@ export function netWorth(
   }, 0);
 }
 
+/**
+ * True when the failure is *specifically* the accounts migration not having been applied — the
+ * `account_id` column or the `account`/`transfer` relations are missing. A ledger read must survive
+ * this: without the guard, a missing column turns every transaction query into a 500 and the whole
+ * app looks broken. Deliberately narrower than `isMissingFxColumnError`, which claims every
+ * PGRST204 and would swallow unrelated errors.
+ */
+export function isMissingAccountsColumnError(
+  error: { code?: string | null; message?: string | null } | null | undefined
+): boolean {
+  if (!error) return false;
+  const message = error.message ?? "";
+  if (error.code === "42703" || error.code === "42P01") {
+    return /account_id|account\b|transfer/i.test(message);
+  }
+  if (error.code === "PGRST204") {
+    // Only the transaction column and the accounts relations. A missing `color` on `account` is a
+    // different problem and must keep its own error.
+    return /'account_id'|'from_account_id'|'to_account_id'/.test(message);
+  }
+  // PostgREST reports a missing embed-target relationship as PGRST200.
+  if (error.code === "PGRST200") {
+    return /\baccount\b/i.test(message);
+  }
+  return false;
+}
+
 export const ACCOUNT_MIGRATION_REQUIRED =
   "Accounts aren't set up in this workspace yet. Run the SQL in docs/accounts.md (Supabase SQL editor), then try again.";
 
