@@ -25,6 +25,9 @@ export type Transaction = {
   fxRateAt: string | null;
   fxSource: "auto" | "manual" | null;
   category?: { id: string; name: string; color: string; icon: string } | null;
+  /** Null for rows recorded before accounts, or after their account was archived. */
+  accountId: string | null;
+  account?: { id: string; name: string; type: string; icon: string; color: string } | null;
 };
 
 export type TransactionInput = {
@@ -36,6 +39,7 @@ export type TransactionInput = {
   date: string;
   type?: "expense" | "income";
   categoryId?: string | null;
+  accountId?: string | null;
   tags?: string[];
   notes?: string | null;
 };
@@ -43,6 +47,8 @@ export type TransactionInput = {
 export type TransactionFilters = {
   search?: string;
   categoryId?: string;
+  accountId?: string;
+  unassigned?: boolean;
   type?: string;
   startDate?: string;
   endDate?: string;
@@ -71,9 +77,11 @@ type RawTransaction = {
   fx_rate?: number | null;
   fx_rate_at?: string | null;
   fx_source?: string | null;
+  account_id?: string | null;
   created_at: string;
   updated_at: string;
   category?: { id: string; name: string; color: string; icon: string } | null;
+  account?: { id: string; name: string; type: string; icon: string; color: string } | null;
 };
 
 function mapTransaction(raw: RawTransaction): Transaction {
@@ -93,6 +101,8 @@ function mapTransaction(raw: RawTransaction): Transaction {
     fxRateAt: raw.fx_rate_at ?? null,
     fxSource: (raw.fx_source as Transaction["fxSource"]) ?? null,
     category: raw.category ?? null,
+    accountId: raw.account_id ?? null,
+    account: raw.account ?? null,
   };
 }
 
@@ -102,6 +112,8 @@ async function fetchTransactionsWithCount(
   const params = new URLSearchParams();
   if (filters?.search) params.set("search", filters.search);
   if (filters?.categoryId) params.set("categoryId", filters.categoryId);
+  if (filters?.accountId) params.set("accountId", filters.accountId);
+  if (filters?.unassigned) params.set("unassigned", "true");
   if (filters?.type) params.set("type", filters.type);
   if (filters?.startDate) params.set("startDate", filters.startDate);
   if (filters?.endDate) params.set("endDate", filters.endDate);
@@ -150,6 +162,7 @@ async function createTransactionOrQueue(
         id: crypto.randomUUID(),
         userId,
         createdAt: Date.now(),
+        kind: "transaction",
         payload: data,
       });
       return {
@@ -168,6 +181,8 @@ async function createTransactionOrQueue(
         fxRateAt: null,
         fxSource: data.fxSource ?? null,
         category: null,
+        accountId: data.accountId ?? null,
+        account: null,
         queued: true,
       };
     }
@@ -241,6 +256,9 @@ async function restoreTransaction(tx: Transaction): Promise<void> {
       date: tx.date,
       type: tx.type,
       categoryId: tx.categoryId,
+      // Without this an Undo would restore the row but drop it out of its
+      // account's balance.
+      accountId: tx.accountId,
       tags: tx.tags ?? undefined,
       notes: tx.notes,
     }),
@@ -256,6 +274,9 @@ export function useCreateTransaction() {
     onSuccess: (tx) => {
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: ["transactions-page"] });
+      // Assigning or removing an account changes a balance, so the accounts
+      // list (and the pickers reading it) has to refetch too.
+      qc.invalidateQueries({ queryKey: ["accounts"] });
       if (tx.queued) {
         toast.success("Saved offline", {
           description: "It'll sync when you're back online.",
@@ -276,6 +297,9 @@ export function useUpdateTransaction() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: ["transactions-page"] });
+      // Assigning or removing an account changes a balance, so the accounts
+      // list (and the pickers reading it) has to refetch too.
+      qc.invalidateQueries({ queryKey: ["accounts"] });
       toast.success("Transaction updated");
     },
     onError: (err: Error) => toast.error(err.message),
@@ -296,6 +320,7 @@ export function useDeleteTransaction() {
       const invalidate = () => {
         qc.invalidateQueries({ queryKey: ["transactions"] });
         qc.invalidateQueries({ queryKey: ["transactions-page"] });
+        qc.invalidateQueries({ queryKey: ["accounts"] });
       };
       toast.success("Transaction deleted", {
         action: {

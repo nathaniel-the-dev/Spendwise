@@ -2,6 +2,7 @@
 
 import { Clock, Circle } from "lucide-react";
 import { categoryIconMap } from "@/components/category-icon";
+import { isOutboxTransaction } from "@/lib/outbox";
 import { useOutbox } from "@/hooks/use-outbox";
 import { useCategories } from "@/hooks/use-categories";
 import { useUser } from "@/components/supabase-provider";
@@ -12,17 +13,21 @@ import { formatCurrency, formatDate } from "@/lib/utils";
  * ledger reflects what the user has recorded even before it syncs. These are
  * local-only until <OutboxSync> replays them; the real row (server id) appears
  * above on the next successful fetch, and the pending copy disappears with it.
+ *
+ * The queue also carries offline transfers, which are not ledger rows — they
+ * are filtered out here and shown on the accounts page instead.
  */
 export function PendingTransactions({ currency = "USD" }: { currency?: string }) {
   const { user } = useUser();
   const { items } = useOutbox(user?.id);
   const { data: categories } = useCategories();
 
-  if (items.length === 0) return null;
+  const pending = items.filter(isOutboxTransaction);
+  if (pending.length === 0) return null;
 
   return (
     <ul aria-label="Unsynced transactions">
-      {items.map((item) => {
+      {pending.map((item) => {
         const cat = categories?.find((c) => c.id === item.payload.categoryId);
         const IconComponent = cat?.icon ? categoryIconMap[cat.icon] ?? Circle : Circle;
         const color = cat?.color ?? "var(--muted-foreground)";

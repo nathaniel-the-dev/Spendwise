@@ -3,11 +3,11 @@ import { get, set, del, keys, delMany } from "idb-keyval";
 /**
  * Offline write queue (outbox).
  *
- * When a transaction create fails because the device is offline, the payload
- * is parked in IndexedDB and replayed by <OutboxSync> once the browser is
- * back online. Deletes/edits are NOT queued — replaying those blind risks
- * destroying or duplicating server state, and the app's delete flow already
- * guards with Undo. Creates are the one operation safe to queue.
+ * When a transaction or transfer create fails because the device is offline,
+ * the payload is parked in IndexedDB and replayed by <OutboxSync> once the
+ * browser is back online. Deletes/edits are NOT queued — replaying those blind
+ * risks destroying or duplicating server state, and the app's delete flow
+ * already guards with Undo. Creates are the one operation safe to queue.
  *
  * Replay is a normal POST (the server mints the row id), so the only
  * duplicate window is "POST succeeded but the response was lost before we
@@ -24,23 +24,63 @@ export type OutboxTransaction = {
   id: string;
   userId: string;
   createdAt: number;
-  payload: {
-    amount: number;
-    currency?: string;
-    /**
-     * FX snapshot captured at entry. Carried through the queue so an offline
-     * write replays with the rate the user actually saw, not today's rate.
-     */
-    fxRate?: number | null;
-    fxSource?: "auto" | "manual" | null;
-    description: string;
-    date: string;
-    type?: "expense" | "income";
-    categoryId?: string | null;
-    tags?: string[];
-    notes?: string | null;
-  };
+  /**
+   * Which endpoint replays this entry. Defaults to "transaction" for entries
+   * queued before transfers existed, so an old queue still drains.
+   */
+  kind?: OutboxKind;
+  /**
+   * A transfer payload has no `description`-led shape, so the payload is a
+   * union discriminated by `kind`. Consumers that only render transactions
+   * narrow with `isOutboxTransaction()` first.
+   */
+  payload: OutboxTransactionPayload | OutboxTransferPayload;
 };
+
+export type OutboxKind = "transaction" | "transfer";
+
+export type OutboxTransactionPayload = {
+  amount: number;
+  currency?: string;
+  /**
+   * FX snapshot captured at entry. Carried through the queue so an offline
+   * write replays with the rate the user actually saw, not today's rate.
+   */
+  fxRate?: number | null;
+  fxSource?: "auto" | "manual" | null;
+  description: string;
+  date: string;
+  type?: "expense" | "income";
+  categoryId?: string | null;
+  /**
+   * Carried through the queue deliberately: without it a transaction recorded
+   * offline would replay with a NULL account and quietly drop out of its
+   * balance — silent data loss, which is exactly what this queue exists to
+   * prevent.
+   */
+  accountId?: string | null;
+  tags?: string[];
+  notes?: string | null;
+};
+
+export type OutboxTransferPayload = {
+  fromAccountId: string;
+  toAccountId: string;
+  amount: number;
+  currency?: string;
+  date: string;
+  description?: string | null;
+  notes?: string | null;
+  fxRate?: number | null;
+  fxSource?: "auto" | "manual" | null;
+};
+
+/** Narrowing helper for consumers that render only transaction entries. */
+export function isOutboxTransaction(
+  item: OutboxTransaction
+): item is OutboxTransaction & { payload: OutboxTransactionPayload } {
+  return (item.kind ?? "transaction") === "transaction";
+}
 
 const KEY_PREFIX = "spendwise-outbox:";
 /** Fired on every outbox mutation so mounted hooks can refetch the list. */

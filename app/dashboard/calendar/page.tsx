@@ -188,6 +188,7 @@ export default function CalendarPage() {
             date: dayKey(new Date(editing.date)),
             type: editing.type,
             categoryId: editing.categoryId || "",
+            accountId: editing.accountId || "",
             tags: editing.tags?.join(", ") || "",
             notes: editing.notes || "",
           }
@@ -248,6 +249,7 @@ export default function CalendarPage() {
       date: new Date(values.date).toISOString(),
       type: values.type,
       categoryId: values.categoryId || null,
+      accountId: values.accountId || null,
       tags: values.tags ? values.tags.split(",").map((t) => t.trim()).filter(Boolean) : [],
       notes: values.notes || null,
     };

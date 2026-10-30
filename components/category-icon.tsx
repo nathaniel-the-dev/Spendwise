@@ -24,15 +24,18 @@ import {
   Smartphone,
   Tv,
   Utensils,
+  Wallet,
+  Briefcase,
+  Landmark,
   Wifi,
   Zap,
   type LucideIcon,
 } from "lucide-react";
 
 /**
- * Central registry mapping category icon keys (the `icon` value stored on a
- * category) to Lucide icon components. Prefer this over per-page emoji or
- * icon maps so category icons render consistently across the app.
+ * Central registry mapping icon keys (the `icon` value stored on a category or
+ * an account) to Lucide icon components. Prefer this over per-page emoji or
+ * icon maps so icons render consistently across the app.
  */
 export const categoryIconMap: Record<string, LucideIcon> = {
   "shopping-cart": ShoppingCart,
@@ -60,6 +63,11 @@ export const categoryIconMap: Record<string, LucideIcon> = {
   zap: Zap,
   fire: Flame,
   circle: Circle,
+  // Account icons (docs/accounts.md). Registered here rather than ad hoc so an
+  // account's stored key always resolves to the same glyph.
+  wallet: Wallet,
+  briefcase: Briefcase,
+  landmark: Landmark,
 };
 
 /** Resolve an icon key to its Lucide component, falling back to Circle. */

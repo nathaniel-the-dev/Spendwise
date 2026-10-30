@@ -8,6 +8,7 @@ import {
   FX_MIGRATION_REQUIRED,
   isMissingFxColumnError,
 } from "@/lib/fx";
+import { ACCOUNT_MIGRATION_REQUIRED, isMissingAccountTableError } from "@/lib/accounts";
 
 const createSchema = z.object({
   amount: z.number().finite().positive(),
@@ -18,9 +19,13 @@ const createSchema = z.object({
   date: z.string(),
   type: z.enum(["expense", "income"]).optional(),
   categoryId: z.string().optional().nullable(),
+  accountId: z.string().optional().nullable(),
   tags: z.array(z.string()).optional(),
   notes: z.string().optional().nullable(),
 });
+
+/** `account` embed so the ledger can label which account a row landed in. */
+const TRANSACTION_SELECT = "*, category(*), account(*)";
 
 export async function GET(request: Request) {
   try {
@@ -35,6 +40,8 @@ export async function GET(request: Request) {
     const minAmount = url.searchParams.get("minAmount");
     const maxAmount = url.searchParams.get("maxAmount");
     const uncategorized = url.searchParams.get("uncategorized");
+    const accountId = url.searchParams.get("accountId");
+    const unassigned = url.searchParams.get("unassigned");
     const tag = url.searchParams.get("tag");
     const sort = url.searchParams.get("sort") ?? "date";
     const dir = url.searchParams.get("dir") ?? "desc";
@@ -43,7 +50,7 @@ export async function GET(request: Request) {
 
     let query = supabase
       .from("transaction")
-      .select("*, category(*)", { count: "exact" })
+      .select(TRANSACTION_SELECT, { count: "exact" })
       .eq("user_id", userId);
 
     if (sort === "amount") {
@@ -85,6 +92,15 @@ export async function GET(request: Request) {
       query = query.is("category_id", null);
     }
 
+    if (accountId) {
+      query = query.eq("account_id", accountId);
+    }
+
+    // Rows that predate accounts, or whose account was deleted, live here.
+    if (unassigned === "true") {
+      query = query.is("account_id", null);
+    }
+
     if (tag) {
       query = query.contains("tags", [tag]);
     }
@@ -92,6 +108,9 @@ export async function GET(request: Request) {
     const { data, error: queryError, count } = await query;
 
     if (queryError) {
+      if (isMissingAccountTableError(queryError)) {
+        return NextResponse.json({ error: ACCOUNT_MIGRATION_REQUIRED }, { status: 400 });
+      }
       console.error("Supabase query error:", queryError);
       return NextResponse.json({ error: "Failed to fetch transactions" }, { status: 500 });
     }
@@ -118,12 +137,35 @@ export async function POST(request: Request) {
       );
     }
 
-    const { amount, currency, fxRate, fxSource, description, date, type, categoryId, tags, notes } = parsed.data;
+    const { amount, currency, fxRate, fxSource, description, date, type, categoryId, accountId, tags, notes } = parsed.data;
     const id = generateId();
 
     // Foreign amounts carry a frozen preferred-currency snapshot; amounts already
     // in the preferred currency contribute no fx columns at all.
     const fxColumns = buildFxColumns({ currency, amount, fxRate, fxSource });
+
+    // Ownership is checked before the write: a raw FK violation would surface as
+    // an opaque 500 and the user couldn't tell which id was wrong.
+    if (accountId) {
+      const { data: account, error: accountError } = await supabase
+        .from("account")
+        .select("id")
+        .eq("id", accountId)
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (accountError) {
+        if (isMissingAccountTableError(accountError)) {
+          return NextResponse.json({ error: ACCOUNT_MIGRATION_REQUIRED }, { status: 400 });
+        }
+        console.error("Supabase query error:", accountError);
+        return NextResponse.json({ error: "Failed to create transaction" }, { status: 500 });
+      }
+
+      if (!account) {
+        return NextResponse.json({ error: "That account isn't yours." }, { status: 400 });
+      }
+    }
 
     const { data, error: insertError } = await supabase
       .from("transaction")
@@ -135,17 +177,21 @@ export async function POST(request: Request) {
         date,
         type: type ?? "expense",
         category_id: categoryId ?? null,
+        account_id: accountId ?? null,
         tags: tags ?? null,
         notes: notes ?? null,
         user_id: userId,
         ...fxColumns,
       })
-      .select("*, category(*)")
+      .select(TRANSACTION_SELECT)
       .single();
 
     if (insertError) {
       if (isMissingFxColumnError(insertError)) {
         return NextResponse.json({ error: FX_MIGRATION_REQUIRED }, { status: 400 });
+      }
+      if (isMissingAccountTableError(insertError)) {
+        return NextResponse.json({ error: ACCOUNT_MIGRATION_REQUIRED }, { status: 400 });
       }
       console.error("Supabase insert error:", insertError);
       return NextResponse.json({ error: "Failed to create transaction" }, { status: 500 });

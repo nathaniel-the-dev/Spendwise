@@ -22,8 +22,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useCategories } from "@/hooks/use-categories";
+import { useAccounts } from "@/hooks/use-accounts";
 import { useSettings } from "@/hooks/use-settings";
 import { CategorySelect } from "@/components/shared/category-select";
+import { AccountSelect } from "@/components/shared/account-select";
 import { CurrencySelect } from "@/components/shared/currency-select";
 import { FxRateField } from "@/components/shared/fx-rate-field";
 import { AutocompleteInput } from "@/components/shared/autocomplete-input";
@@ -40,6 +42,7 @@ const transactionSchema = z.object({
   date: z.string().min(1, "Date is required"),
   type: z.enum(["expense", "income"]),
   categoryId: z.string().optional(),
+  accountId: z.string().optional(),
   tags: z.string().optional(),
   notes: z.string().optional(),
 });
@@ -68,8 +71,10 @@ export function TransactionFormDialog({
   descriptionSuggestions = [],
 }: Props) {
   const { data: categories } = useCategories();
+  const { data: accounts } = useAccounts();
   const { data: settings } = useSettings();
   const preferredCurrency = settings?.preferredCurrency ?? "USD";
+  const activeAccounts = (accounts ?? []).filter((a) => !a.isArchived);
   const isEdit = Boolean(defaultValues?.description);
   const [showMore, setShowMore] = useState(false);
   const [addAnother, setAddAnother] = useState(false);
@@ -84,6 +89,7 @@ export function TransactionFormDialog({
       date: new Date().toISOString().split("T")[0],
       type: "expense",
       categoryId: "",
+      accountId: "",
       notes: "",
       ...defaultValues,
     },
@@ -117,7 +123,7 @@ export function TransactionFormDialog({
       setShowMore(Boolean(defaultValues?.tags || defaultValues?.notes));
       form.reset({
         amount: 0, currency: preferredCurrency, description: "", date: new Date().toISOString().split("T")[0],
-        type: "expense", categoryId: "", tags: "", notes: "", ...defaultValues,
+        type: "expense", categoryId: "", accountId: "", tags: "", notes: "", ...defaultValues,
       });
     }
   }, [open, defaultValues, preferredCurrency, form]);
@@ -237,6 +243,27 @@ export function TransactionFormDialog({
               Categorizing is what powers budgets and reports — uncategorized spending is invisible to both.
             </p>
           </div>
+
+          {/*
+            The account picker only appears once accounts exist. With none, an
+            empty select is just a dead control — the app works exactly as
+            before until the user sets one up.
+          */}
+          {accounts && accounts.length > 0 && (
+            <div className="space-y-2">
+              <Label htmlFor="transaction-account">Account</Label>
+              <AccountSelect
+                id="transaction-account"
+                accounts={activeAccounts}
+                value={form.watch("accountId") || "none"}
+                onValueChange={(v) =>
+                  form.setValue("accountId", v === "none" ? "" : v, { shouldDirty: true })
+                }
+                noneLabel="Unassigned"
+                placeholder="Unassigned"
+              />
+            </div>
+          )}
 
           {!showMore && !isEdit && (
             <button

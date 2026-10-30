@@ -3,6 +3,7 @@ import { getAuthContext, handleError } from "@/lib/api-utils";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { FX_MIGRATION_REQUIRED, isMissingFxColumnError, resolveFxUpdate } from "@/lib/fx";
+import { ACCOUNT_MIGRATION_REQUIRED, isMissingAccountTableError } from "@/lib/accounts";
 
 const updateSchema = z.object({
   amount: z.number().finite().positive().optional(),
@@ -13,14 +14,18 @@ const updateSchema = z.object({
   date: z.string().optional(),
   type: z.enum(["expense", "income"]).optional(),
   categoryId: z.string().optional().nullable(),
+  accountId: z.string().optional().nullable(),
   tags: z.array(z.string()).optional().nullable(),
   notes: z.string().optional().nullable(),
 });
 
+/** `account` embed so an edited row reports which account it landed in. */
+const TRANSACTION_SELECT = "*, category(*), account(*)";
+
 async function getTransaction(supabase: Awaited<ReturnType<typeof createClient>>, id: string, userId: string) {
   const { data } = await supabase
     .from("transaction")
-    .select("*, category(*)")
+    .select(TRANSACTION_SELECT)
     .eq("id", id)
     .eq("user_id", userId)
     .maybeSingle();
@@ -95,6 +100,29 @@ export async function PATCH(
     if (parsed.data.date !== undefined) updateData.date = parsed.data.date;
     if (parsed.data.type !== undefined) updateData.type = parsed.data.type;
     if (parsed.data.categoryId !== undefined) updateData.category_id = parsed.data.categoryId;
+    // Same ownership guard as the create route, so re-assigning to someone
+    // else's account is a clear 400 rather than an FK violation.
+    if (parsed.data.accountId) {
+      const { data: account, error: accountError } = await supabase
+        .from("account")
+        .select("id")
+        .eq("id", parsed.data.accountId)
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (accountError) {
+        if (isMissingAccountTableError(accountError)) {
+          return NextResponse.json({ error: ACCOUNT_MIGRATION_REQUIRED }, { status: 400 });
+        }
+        console.error("Supabase query error:", accountError);
+        return NextResponse.json({ error: "Failed to update transaction" }, { status: 500 });
+      }
+
+      if (!account) {
+        return NextResponse.json({ error: "That account isn't yours." }, { status: 400 });
+      }
+    }
+    if (parsed.data.accountId !== undefined) updateData.account_id = parsed.data.accountId;
     if (parsed.data.tags !== undefined) updateData.tags = parsed.data.tags;
     if (parsed.data.notes !== undefined) updateData.notes = parsed.data.notes;
 
@@ -102,12 +130,15 @@ export async function PATCH(
       .from("transaction")
       .update(updateData)
       .eq("id", id)
-      .select("*, category(*)")
+      .select(TRANSACTION_SELECT)
       .single();
 
     if (updateError) {
       if (isMissingFxColumnError(updateError)) {
         return NextResponse.json({ error: FX_MIGRATION_REQUIRED }, { status: 400 });
+      }
+      if (isMissingAccountTableError(updateError)) {
+        return NextResponse.json({ error: ACCOUNT_MIGRATION_REQUIRED }, { status: 400 });
       }
       console.error("Supabase update error:", updateError);
       return NextResponse.json({ error: "Failed to update transaction" }, { status: 500 });

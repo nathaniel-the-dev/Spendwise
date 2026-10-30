@@ -6,7 +6,12 @@ import { toast } from "sonner";
 import { useUser } from "@/components/supabase-provider";
 import { useOnlineStatus } from "@/hooks/use-online-status";
 import { useOutbox } from "@/hooks/use-outbox";
-import { isRetryableReplayStatus, readOutbox, removeFromOutbox } from "@/lib/outbox";
+import {
+  isOutboxTransaction,
+  isRetryableReplayStatus,
+  readOutbox,
+  removeFromOutbox,
+} from "@/lib/outbox";
 import { isOfflineError } from "@/lib/api-error";
 
 /** How many times to auto-retry a deferred (auth/server) replay before leaving it queued. */
@@ -64,7 +69,13 @@ export function OutboxSync() {
           for (const item of pending) {
             if (cancelled) break;
             try {
-              const res = await fetch("/api/transactions", {
+              // Each entry replays to the endpoint its kind belongs to; a
+              // transfer posted to /api/transactions would be rejected as an
+              // invalid transaction payload and silently dropped.
+              const endpoint = isOutboxTransaction(item)
+                ? "/api/transactions"
+                : "/api/transfers";
+              const res = await fetch(endpoint, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(item.payload),
@@ -112,17 +123,20 @@ export function OutboxSync() {
 
       if (cancelled) return;
       if (dropped) {
-        toast.error("An offline transaction couldn't be saved", {
+        toast.error("An offline entry couldn't be saved", {
           description: "It was dropped — please add it again.",
         });
       }
       if (synced > 0) {
         // removeFromOutbox already emits OUTBOX_EVENT (refreshes pending rows);
-        // here we just pull the now-persisted rows from the server.
+        // here we just pull the now-persisted rows from the server. Transfers
+        // move balances, so accounts are invalidated too.
         qc.invalidateQueries({ queryKey: ["transactions"] });
         qc.invalidateQueries({ queryKey: ["transactions-page"] });
+        qc.invalidateQueries({ queryKey: ["accounts"] });
+        qc.invalidateQueries({ queryKey: ["transfers"] });
         toast.success(
-          synced === 1 ? "Offline transaction synced" : `${synced} offline transactions synced`
+          synced === 1 ? "Offline entry synced" : `${synced} offline entries synced`
         );
       }
     }

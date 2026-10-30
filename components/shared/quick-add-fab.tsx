@@ -38,6 +38,7 @@ export function QuickAddFab() {
         date: new Date(values.date).toISOString(),
         type: values.type,
         categoryId: values.categoryId || null,
+        accountId: values.accountId || null,
         tags: values.tags
           ? values.tags.split(",").map((t) => t.trim()).filter(Boolean)
           : [],

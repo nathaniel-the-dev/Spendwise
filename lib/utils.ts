@@ -279,6 +279,16 @@ export const categoryIcons = [
   "wifi", "droplets", "zap", "fire", "circle",
 ] as const;
 
+/**
+ * Icon keys offered when creating an ACCOUNT. Subset of `categoryIcons` —
+ * these are the ones that read as "a place money lives" rather than "a thing
+ * you bought". Every key resolves in `categoryIconMap`.
+ */
+export const accountIcons = [
+  "wallet", "piggy-bank", "credit-card", "coins", "building-2",
+  "home", "car", "briefcase", "landmark", "circle",
+] as const;
+
 export const categoryColors = [
   "#ef4444", "#f97316", "#f59e0b", "#eab308", "#84cc16",
   "#22c55e", "#14b8a6", "#06b6d4", "#3b82f6", "#6366f1",
