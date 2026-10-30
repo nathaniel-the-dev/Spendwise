@@ -26,6 +26,8 @@ begin
   raise notice 'Dropped an empty, incompatible public.account table.';
 end $$;
 
+# ==============================================================================
+
 -- ── account ────────────────────────────────────────────────────────────────────
 create table if not exists public.account (
   id                   uuid primary key default gen_random_uuid(),
@@ -90,6 +92,8 @@ end $$;
 create index if not exists transfer_from_idx on public.transfer(from_account_id);
 create index if not exists transfer_to_idx   on public.transfer(to_account_id);
 
+# ==============================================================================
+
 alter table public.account  enable row level security;
 alter table public.transfer enable row level security;
 
@@ -105,6 +109,8 @@ create policy "transfer own rows" on public.transfer
 grant usage on schema public to anon, authenticated;
 grant select, insert, update, delete on public.account  to authenticated;
 grant select, insert, update, delete on public.transfer to authenticated;
+
+# ==============================================================================
 
 -- `create or replace view` refuses to change a view's column list. That is exactly the failure the
 -- accounts feature hit in production, so drop first and create clean below.
