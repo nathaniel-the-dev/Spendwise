@@ -189,9 +189,8 @@ export async function POST(request: Request) {
       }
     }
 
-    const { data, error: insertError } = await supabase
-      .from("transaction")
-      .insert({
+    const buildInsert = (select: string, withAccount: boolean) => {
+      const row: Record<string, unknown> = {
         id,
         amount,
         currency: currency ?? "USD",
@@ -199,20 +198,29 @@ export async function POST(request: Request) {
         date,
         type: type ?? "expense",
         category_id: categoryId ?? null,
-        account_id: accountId ?? null,
         tags: tags ?? null,
         notes: notes ?? null,
         user_id: userId,
         ...fxColumns,
-      })
-      .select(TRANSACTION_SELECT)
-      .single();
+      };
+      // Only send account_id when the column can exist; otherwise the payload itself is rejected.
+      if (withAccount) row.account_id = accountId ?? null;
+      return supabase.from("transaction").insert(row).select(select).single();
+    };
+
+    let { data, error: insertError } = await buildInsert(TRANSACTION_SELECT, true);
+
+    if (insertError && isMissingAccountsColumnError(insertError) && !accountId) {
+      // Same rule as the GET: a plain expense must keep saving while the migration is pending.
+      console.warn("accounts migration not applied; creating transaction without account column");
+      ({ data, error: insertError } = await buildInsert(TRANSACTION_SELECT_NO_ACCOUNT, false));
+    }
 
     if (insertError) {
       if (isMissingFxColumnError(insertError)) {
         return NextResponse.json({ error: FX_MIGRATION_REQUIRED }, { status: 400 });
       }
-      if (isMissingAccountTableError(insertError)) {
+      if (isMissingAccountTableError(insertError) || isMissingAccountsColumnError(insertError)) {
         return NextResponse.json({ error: ACCOUNT_MIGRATION_REQUIRED }, { status: 400 });
       }
       console.error("Supabase insert error:", insertError);

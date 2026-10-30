@@ -3,7 +3,7 @@ import { getAuthContext, handleError } from "@/lib/api-utils";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { FX_MIGRATION_REQUIRED, isMissingFxColumnError, resolveFxUpdate } from "@/lib/fx";
-import { ACCOUNT_MIGRATION_REQUIRED, isMissingAccountTableError } from "@/lib/accounts";
+import { ACCOUNT_MIGRATION_REQUIRED, isMissingAccountTableError, isMissingAccountsColumnError } from "@/lib/accounts";
 
 const updateSchema = z.object({
   amount: z.number().finite().positive().optional(),
@@ -21,15 +21,32 @@ const updateSchema = z.object({
 
 /** `account` embed so an edited row reports which account it landed in. */
 const TRANSACTION_SELECT = "*, category(*), account(*)";
+/** Fallback used when the accounts migration hasn't been applied yet. */
+const TRANSACTION_SELECT_NO_ACCOUNT = "*, category(*)";
 
-async function getTransaction(supabase: Awaited<ReturnType<typeof createClient>>, id: string, userId: string) {
-  const { data } = await supabase
-    .from("transaction")
-    .select(TRANSACTION_SELECT)
-    .eq("id", id)
-    .eq("user_id", userId)
-    .maybeSingle();
-  return data;
+/** The policy-relevant columns; the account embed and the rest are not needed by callers. */
+type ExistingTransaction = {
+  amount: number;
+  currency?: string | null;
+  fx_rate?: number | null;
+  fx_source?: string | null;
+};
+
+async function getTransaction(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  id: string,
+  userId: string
+): Promise<ExistingTransaction | null> {
+  const run = (select: string) =>
+    supabase.from("transaction").select(select).eq("id", id).eq("user_id", userId).maybeSingle();
+
+  const { data, error } = await run(TRANSACTION_SELECT);
+  if (error && isMissingAccountsColumnError(error)) {
+    // An edit or delete must stay possible while the accounts migration is pending.
+    const fallback = await run(TRANSACTION_SELECT_NO_ACCOUNT);
+    return (fallback.data as ExistingTransaction | null) ?? null;
+  }
+  return (data as ExistingTransaction | null) ?? null;
 }
 
 export async function GET(
@@ -126,18 +143,24 @@ export async function PATCH(
     if (parsed.data.tags !== undefined) updateData.tags = parsed.data.tags;
     if (parsed.data.notes !== undefined) updateData.notes = parsed.data.notes;
 
-    const { data, error: updateError } = await supabase
-      .from("transaction")
-      .update(updateData)
-      .eq("id", id)
-      .select(TRANSACTION_SELECT)
-      .single();
+    const runUpdate = (select: string, withAccount: boolean) => {
+      const payload = { ...updateData };
+      if (!withAccount) delete payload.account_id;
+      return supabase.from("transaction").update(payload).eq("id", id).select(select).single();
+    };
+
+    let { data, error: updateError } = await runUpdate(TRANSACTION_SELECT, true);
+
+    if (updateError && isMissingAccountsColumnError(updateError) && !parsed.data.accountId) {
+      console.warn("accounts migration not applied; updating transaction without account column");
+      ({ data, error: updateError } = await runUpdate(TRANSACTION_SELECT_NO_ACCOUNT, false));
+    }
 
     if (updateError) {
       if (isMissingFxColumnError(updateError)) {
         return NextResponse.json({ error: FX_MIGRATION_REQUIRED }, { status: 400 });
       }
-      if (isMissingAccountTableError(updateError)) {
+      if (isMissingAccountTableError(updateError) || isMissingAccountsColumnError(updateError)) {
         return NextResponse.json({ error: ACCOUNT_MIGRATION_REQUIRED }, { status: 400 });
       }
       console.error("Supabase update error:", updateError);
