@@ -45,3 +45,8 @@ next-env.d.ts
 .github
 .impeccable
 docs
+
+# Agent files
+AGENTS.md
+DESIGN.md
+PRODUCT.md
