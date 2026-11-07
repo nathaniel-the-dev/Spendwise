@@ -29,6 +29,7 @@ import {
   type BudgetFormValues,
 } from "@/components/shared/budget-form-dialog";
 import { ErrorState } from "@/components/shared/error-state";
+import { LoadingState } from "@/components/shared/loading-state";
 import { formatCurrency, formatDate, computeBudgetSpend, budgetPct, budgetTone } from "@/lib/utils";
 
 export default function BudgetsPage() {
@@ -107,9 +108,7 @@ export default function BudgetsPage() {
       </div>
 
       {isLoading || (!budgets && !isError) ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-label="Loading budgets" />
-        </div>
+        <LoadingState label="Loading budgets" />
       ) : isError && !budgets ? (
         <ErrorState
           title="Couldn't load your budgets"
@@ -160,13 +159,13 @@ export default function BudgetsPage() {
                     </div>
                     <div className="flex gap-0.5">
                       <Button
-                        variant="ghost" size="icon" className="h-8 w-8 rounded-lg" aria-label={`Edit ${cat?.name ?? "all-expenses"} budget`}
+                        variant="ghost" size="icon" className="rounded-lg" aria-label={`Edit ${cat?.name ?? "all-expenses"} budget`}
                         onClick={() => { setEditing(budget); setDialogOpen(true); }}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <Button
-                        variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-destructive" aria-label={`Delete ${cat?.name ?? "all-expenses"} budget`}
+                        variant="ghost" size="icon" className="rounded-lg text-destructive" aria-label={`Delete ${cat?.name ?? "all-expenses"} budget`}
                         onClick={() => setDeleting(budget)}
                       >
                         <Trash2 className="h-4 w-4" />

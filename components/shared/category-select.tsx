@@ -22,6 +22,8 @@ export function CategorySelect({
   noneLabel,
   id,
   className,
+  "aria-invalid": ariaInvalid,
+  "aria-describedby": ariaDescribedBy,
 }: {
   categories: Category[] | undefined;
   value: string;
@@ -30,10 +32,12 @@ export function CategorySelect({
   noneLabel?: string;
   id?: string;
   className?: string;
+  "aria-invalid"?: boolean;
+  "aria-describedby"?: string;
 }) {
   return (
     <Select value={noneLabel ? value || "none" : value} onValueChange={onValueChange}>
-      <SelectTrigger id={id} className={className}>
+      <SelectTrigger id={id} className={className} aria-invalid={ariaInvalid} aria-describedby={ariaDescribedBy}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>

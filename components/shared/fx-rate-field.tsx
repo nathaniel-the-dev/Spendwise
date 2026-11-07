@@ -98,6 +98,8 @@ export function FxRateField({
           }}
           className="h-8 w-36"
           aria-label={`Exchange rate from ${currency} to ${preferredCurrency}`}
+          aria-invalid={!!error}
+          aria-describedby={error ? `${id}-error` : undefined}
         />
         <span className="text-muted-foreground">{preferredCurrency}</span>
         {source === "manual" && autoRate != null && (
@@ -121,7 +123,7 @@ export function FxRateField({
         </p>
       )}
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && <p id={`${id}-error`} className="text-sm text-destructive">{error}</p>}
     </div>
   );
 }

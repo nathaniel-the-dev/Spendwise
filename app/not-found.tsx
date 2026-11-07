@@ -72,12 +72,12 @@ export default async function NotFound() {
           </p>
 
           <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
-            <Link href="/">
-              <Button size="lg" className="w-full gap-1.5 sm:w-auto">
+            <Button asChild size="lg" className="w-full gap-1.5 sm:w-auto">
+              <Link href="/">
                 <ArrowLeft className="h-4 w-4" aria-hidden="true" />
                 Back to home
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
 
           <nav

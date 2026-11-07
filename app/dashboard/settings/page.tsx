@@ -272,34 +272,25 @@ export default function SettingsPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label className="text-sm">Theme</Label>
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-medium">Theme</legend>
             <p className="text-xs text-muted-foreground">Choose how SpendWise looks for you.</p>
-            <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Theme">
+            <div className="grid grid-cols-3 gap-2">
               {themeOptions.map((option) => {
                 const Icon = option.icon;
                 const active = themePref === option.value;
                 return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    role="radio"
-                    aria-checked={active}
-                    onClick={() => handleThemeChange(option.value)}
-                    className={cn(
-                      "flex flex-col items-center gap-2 rounded-lg border p-3 text-sm font-medium transition-all",
-                      active
-                        ? "border-primary bg-primary/5 text-primary"
-                        : "hover:border-primary/50 hover:bg-muted/50"
-                    )}
-                  >
-                    <Icon className="h-5 w-5" />
-                    {option.label}
-                  </button>
+                  <label key={option.value} className="cursor-pointer">
+                    <input type="radio" name="theme" value={option.value} checked={active} onChange={() => handleThemeChange(option.value)} className="peer sr-only" />
+                    <span className="flex min-h-12 flex-col items-center gap-2 rounded-lg border p-3 text-sm font-medium transition-all hover:border-primary/50 hover:bg-muted/50 peer-checked:border-primary peer-checked:bg-primary/5 peer-checked:text-primary peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ring">
+                      <Icon className="h-5 w-5" aria-hidden="true" />
+                      {option.label}
+                    </span>
+                  </label>
                 );
               })}
             </div>
-          </div>
+          </fieldset>
         </CardContent>
       </Card>
 

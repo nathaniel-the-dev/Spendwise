@@ -83,6 +83,9 @@ export function CalendarGrid({
 
   return (
     <table className="w-full table-fixed border-collapse">
+      <caption className="sr-only">
+        {view === "month" ? "Monthly" : "Weekly"} transaction calendar
+      </caption>
       <thead>
         <tr>
           {weekdayLabels.map((label) => (

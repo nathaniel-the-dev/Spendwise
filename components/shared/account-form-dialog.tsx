@@ -120,9 +120,9 @@ export function AccountFormDialog({
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="account-name">Name</Label>
-            <Input id="account-name" placeholder="e.g. Main checking" {...form.register("name")} />
+            <Input id="account-name" placeholder="e.g. Main checking" aria-invalid={!!form.formState.errors.name} aria-describedby={form.formState.errors.name ? "account-name-error" : undefined} {...form.register("name")} />
             {form.formState.errors.name && (
-              <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
+              <p id="account-name-error" className="text-sm text-destructive">{form.formState.errors.name.message}</p>
             )}
           </div>
 
@@ -160,50 +160,34 @@ export function AccountFormDialog({
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Icon</Label>
-            <div
-              className="grid max-h-24 grid-cols-8 gap-2 overflow-y-auto pr-1"
-              role="radiogroup"
-              aria-label="Account icon"
-            >
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-medium">Icon</legend>
+            <div className="grid max-h-28 grid-cols-7 gap-2 overflow-y-auto pr-1 sm:grid-cols-8">
               {accountIcons.map((icon) => (
-                <button
-                  key={icon}
-                  type="button"
-                  role="radio"
-                  aria-checked={form.watch("icon") === icon}
-                  data-active={form.watch("icon") === icon}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg border text-xs hover:bg-accent data-[active=true]:border-primary data-[active=true]:bg-primary/10"
-                  onClick={() => form.setValue("icon", icon)}
-                  title={icon}
-                  aria-label={icon}
-                >
-                  <CategoryIcon icon={icon} className="h-4 w-4" />
-                </button>
+                <label key={icon} className="cursor-pointer" title={icon}>
+                  <input type="radio" name="account-icon" value={icon} checked={form.watch("icon") === icon} onChange={() => form.setValue("icon", icon, { shouldDirty: true })} className="peer sr-only" />
+                  <span className="flex h-10 w-10 items-center justify-center rounded-lg border text-xs hover:bg-accent peer-checked:border-primary peer-checked:bg-primary/10 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ring">
+                    <CategoryIcon icon={icon} className="h-4 w-4" aria-hidden="true" />
+                    <span className="sr-only">{icon}</span>
+                  </span>
+                </label>
               ))}
             </div>
-          </div>
+          </fieldset>
 
-          <div className="space-y-2">
-            <Label>Color</Label>
-            <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Account color">
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-medium">Color</legend>
+            <div className="flex flex-wrap gap-2">
               {categoryColors.map((color) => (
-                <button
-                  key={color}
-                  type="button"
-                  role="radio"
-                  aria-checked={form.watch("color") === color}
-                  aria-label={`Color ${color}`}
-                  title={color}
-                  data-active={form.watch("color") === color}
-                  className="h-7 w-7 rounded-full border-2 transition-all data-[active=true]:scale-110 data-[active=true]:border-foreground"
-                  style={{ backgroundColor: color }}
-                  onClick={() => form.setValue("color", color)}
-                />
+                <label key={color} className="cursor-pointer" title={color}>
+                  <input type="radio" name="account-color" value={color} checked={form.watch("color") === color} onChange={() => form.setValue("color", color, { shouldDirty: true })} className="peer sr-only" />
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full border-2 transition-transform peer-checked:scale-110 peer-checked:border-foreground peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ring" style={{ backgroundColor: color }}>
+                    <span className="sr-only">Color {color}</span>
+                  </span>
+                </label>
               ))}
             </div>
-          </div>
+          </fieldset>
 
           <div className="flex items-center justify-between rounded-lg border p-3">
             <div className="space-y-0.5">

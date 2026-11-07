@@ -5,6 +5,12 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -73,6 +79,126 @@ function getAvatarGradient(name: string) {
   return avatarGradients[Math.abs(hash) % avatarGradients.length];
 }
 
+function DashboardSidebar({
+  mobile = false,
+  name,
+  email,
+  image,
+  onNavigate,
+}: {
+  mobile?: boolean;
+  name: string;
+  email: string;
+  image?: string;
+  onNavigate?: () => void;
+}) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const initial = name.charAt(0)?.toUpperCase() ?? "U";
+
+  return (
+    <aside className="flex h-full w-60 flex-col border-r glass-sidebar">
+      <div className="flex h-16 items-center justify-between border-b border-sidebar-border/30 px-4">
+        <Link href="/" onClick={onNavigate} className="flex items-center gap-2 font-display text-base font-semibold tracking-tight">
+          <Image src="/icon.png" alt="SpendWise logo" width={28} height={28} className="rounded-lg bg-primary-foreground p-1.5" />
+          <span>SpendWise</span>
+        </Link>
+        {mobile && (
+          <Button variant="ghost" size="icon" aria-label="Close navigation" onClick={onNavigate}>
+            <X className="h-4 w-4" aria-hidden="true" />
+          </Button>
+        )}
+      </div>
+      <nav aria-label="Dashboard" className="flex-1 space-y-0.5 overflow-y-auto p-2">
+        {sidebarLinks.map((link) => {
+          const Icon = link.icon;
+          const isActive = pathname === link.href;
+          return (
+            <Link
+              key={link.href}
+              href={link.href}
+              onClick={onNavigate}
+              aria-current={isActive ? "page" : undefined}
+              className={cn(
+                "flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150",
+                isActive
+                  ? "bg-primary/10 text-primary"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              )}
+            >
+              <Icon className="h-4 w-4" aria-hidden="true" />
+              {link.label}
+            </Link>
+          );
+        })}
+      </nav>
+      <div className="border-t border-sidebar-border/30 p-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-auto w-full justify-start gap-2.5 px-2.5 py-4 hover:bg-sidebar-accent">
+              <div className="relative">
+                <Avatar className="h-9 w-9 ring-1 ring-primary/20">
+                  <AvatarImage src={image} />
+                  <AvatarFallback style={{ background: getAvatarGradient(name), color: "#fff", fontSize: 13 }}>
+                    {initial}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-sidebar-background bg-success" aria-hidden="true" />
+              </div>
+              <div className="min-w-0 flex-1 text-left text-sm">
+                <p className="truncate font-medium">{name}</p>
+                <p className="truncate text-xs text-sidebar-foreground/60">{email}</p>
+              </div>
+              <ChevronDown className="h-4 w-4 shrink-0 text-sidebar-foreground/40" aria-hidden="true" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" sideOffset={8} className="w-64">
+            <div className="flex items-center gap-3 px-3 py-2.5">
+              <Avatar className="h-10 w-10 ring-2 ring-primary/20">
+                <AvatarImage src={image} />
+                <AvatarFallback style={{ background: getAvatarGradient(name), color: "#fff", fontSize: 14 }}>
+                  {initial}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">{name}</p>
+                <p className="truncate text-xs text-muted-foreground">{email}</p>
+              </div>
+            </div>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-sm" asChild>
+              <Link href="/dashboard/settings#profile" onClick={onNavigate}>
+                <UserRound className="mr-2 h-4 w-4" aria-hidden="true" />
+                Manage profile
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-sm" asChild>
+              <Link href="/dashboard/settings" onClick={onNavigate}>
+                <Settings className="mr-2 h-4 w-4" aria-hidden="true" />
+                Settings
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="text-sm text-destructive focus:text-destructive"
+              onClick={async () => {
+                const supabase = createClient();
+                await supabase.auth.signOut();
+                await purgeQueryCache();
+                onNavigate?.();
+                router.push("/");
+              }}
+            >
+              <LogOut className="mr-2 h-4 w-4" aria-hidden="true" />
+              Sign Out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </aside>
+  );
+}
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
@@ -89,6 +215,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setSidebarOpen(false);
   }, [pathname]);
 
+  // A mobile dialog should never survive a resize into the persistent desktop
+  // layout, where its backdrop would otherwise keep the page inert.
+  useEffect(() => {
+    const desktop = window.matchMedia("(min-width: 1024px)");
+    const closeOnDesktop = (event: MediaQueryListEvent) => {
+      if (event.matches) setSidebarOpen(false);
+    };
+    desktop.addEventListener("change", closeOnDesktop);
+    return () => desktop.removeEventListener("change", closeOnDesktop);
+  }, []);
+
   // Formatting locale and display currency for the whole dashboard come from the user's settings.
   useEffect(() => {
     if (settings?.locale) setDefaultLocale(settings.locale);
@@ -97,133 +234,38 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const name = user?.name ?? "User";
   const email = user?.email ?? "";
-  const initial = name.charAt(0)?.toUpperCase() ?? "U";
-
   return (
-    <RestoreGate>
-    <div className="flex h-screen overflow-hidden bg-background">
-      <aside
-        className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-60 flex-col border-r glass-sidebar transition-transform duration-300 lg:static lg:translate-x-0",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        )}
+    <Dialog open={sidebarOpen} onOpenChange={setSidebarOpen}>
+      <RestoreGate>
+      <div className="flex h-screen overflow-hidden bg-background">
+      <a
+        href="#dashboard-content"
+        className="fixed left-3 top-3 z-[100] -translate-y-20 rounded-lg bg-background px-4 py-2 text-sm font-medium shadow-dialog transition-transform focus:translate-y-0"
       >
-        <div className="flex h-16 items-center justify-between px-4 border-b border-sidebar-border/30">
-          <Link href="/" className="flex items-center gap-2 font-display text-base font-semibold tracking-tight">
-            <Image src="/icon.png" alt="SpendWise logo" width={28} height={28} className="rounded-lg bg-primary-foreground p-1.5" />
-            <span>SpendWise</span>
-          </Link>
-          <Button variant="ghost" size="icon" className="h-7 w-7 lg:hidden" aria-label="Close navigation" onClick={() => setSidebarOpen(false)}>
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-        <nav className="flex-1 overflow-y-auto p-2 space-y-0.5">
-          {sidebarLinks.map((link) => {
-            const Icon = link.icon;
-            const isActive = pathname === link.href;
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setSidebarOpen(false)}
-                aria-current={isActive ? "page" : undefined}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150",
-                  isActive
-                    ? "bg-primary/10 text-primary"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                )}
-              >
-                <Icon className="h-4 w-4" aria-hidden="true" />
-                {link.label}
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="border-t border-sidebar-border/30 p-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="w-full justify-start gap-2.5 px-2.5 py-4 h-auto hover:bg-sidebar-accent transition-all duration-150">
-                <div className="relative">
-                  <Avatar className="h-9 w-9 ring-1 ring-primary/20">
-                    <AvatarImage src={user?.image ?? undefined} />
-                    <AvatarFallback style={{ background: getAvatarGradient(name), color: "#fff", fontSize: 13 }}>
-                      {initial}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-success border-2 border-sidebar-background" />
-                </div>
-                <div className="flex-1 text-left text-sm min-w-0">
-                  <p className="font-medium truncate">{name}</p>
-                  <p className="text-xs text-sidebar-foreground/60 truncate">{email}</p>
-                </div>
-                <ChevronDown className="h-4 w-4 text-sidebar-foreground/40 shrink-0" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" sideOffset={8} className="w-64">
-              <div className="flex items-center gap-3 px-3 py-2.5">
-                <Avatar className="h-10 w-10 ring-2 ring-primary/20">
-                  <AvatarImage src={user?.image ?? undefined} />
-                  <AvatarFallback
-                    style={{ background: getAvatarGradient(name), color: "#fff", fontSize: 14 }}
-                  >
-                    {initial}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{name}</p>
-                  <p className="truncate text-xs text-muted-foreground">{email}</p>
-                </div>
-              </div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-sm" asChild>
-                <Link href="/dashboard/settings#profile">
-                  <UserRound className="h-4 w-4 mr-2" />
-                  Manage profile
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="text-sm" asChild>
-                <Link href="/dashboard/settings">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Settings
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-sm text-destructive focus:text-destructive"
-                onClick={async () => {
-                  const supabase = createClient();
-                  await supabase.auth.signOut();
-                  // Drop the disposable cached reads so the next account on
-                  // this device never sees them. The offline outbox survives:
-                  // those are this user's unsynced writes, not cache.
-                  await purgeQueryCache();
-                  router.push("/");
-                }}
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </aside>
-
-      {sidebarOpen && (
-        <button
-          type="button"
-          className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm lg:hidden"
-          aria-label="Close sidebar"
-          onClick={() => setSidebarOpen(false)}
+        Skip to content
+      </a>
+      <div className="hidden lg:block">
+        <DashboardSidebar name={name} email={email} image={user?.image ?? undefined} />
+      </div>
+      <DialogContent className="left-0 top-0 h-dvh max-h-none w-60 max-w-none translate-x-0 translate-y-0 gap-0 rounded-none border-y-0 border-l-0 p-0 lg:hidden [&>button]:hidden">
+        <DialogTitle className="sr-only">Dashboard navigation</DialogTitle>
+        <DashboardSidebar
+          mobile
+          name={name}
+          email={email}
+          image={user?.image ?? undefined}
+          onNavigate={() => setSidebarOpen(false)}
         />
-      )}
+      </DialogContent>
 
       <div className="flex flex-1 flex-col overflow-hidden">
         <OfflineBanner />
         <header className="flex h-14 items-center gap-4 border-b bg-background/80 backdrop-blur-md px-4">
-          <Button variant="ghost" size="icon" className="h-7 w-7 lg:hidden shrink-0" aria-label="Open navigation" onClick={() => setSidebarOpen(true)}>
-            <Menu className="h-4 w-4" />
-          </Button>
+          <DialogTrigger asChild>
+            <Button variant="ghost" size="icon" className="shrink-0 lg:hidden" aria-label="Open navigation">
+              <Menu className="h-4 w-4" aria-hidden="true" />
+            </Button>
+          </DialogTrigger>
           <search
             className="relative flex-1 max-w-md hidden sm:block"
             onSubmit={(e) => {
@@ -254,11 +296,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </Button>
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto p-4 pb-24 md:p-6 md:pb-24">{children}</main>
+        <main id="dashboard-content" tabIndex={-1} className="flex-1 overflow-y-auto p-4 pb-24 focus:outline-none md:p-6 md:pb-24">{children}</main>
       </div>
 
       <QuickAddFab />
-    </div>
-    </RestoreGate>
+      </div>
+      </RestoreGate>
+    </Dialog>
   );
 }

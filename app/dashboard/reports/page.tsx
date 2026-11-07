@@ -13,6 +13,7 @@ import { useTransactions } from "@/hooks/use-transactions";
 import { useCategories } from "@/hooks/use-categories";
 import { useSettings } from "@/hooks/use-settings";
 import { ErrorState } from "@/components/shared/error-state";
+import { LoadingState } from "@/components/shared/loading-state";
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -315,9 +316,10 @@ export default function ReportsPage() {
             <CardTitle className="text-sm font-semibold">Monthly Trend</CardTitle>
           </CardHeader>
           <CardContent className="px-5 pb-5">
-            <div className="h-60">
+            <figure className="h-60" aria-labelledby="overview-monthly-trend-caption">
+              <figcaption id="overview-monthly-trend-caption" className="sr-only">Monthly spending trend for the selected report period.</figcaption>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthlyData}>
+                <BarChart data={monthlyData} aria-hidden="true">
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                   <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="var(--muted-foreground)" />
                   <YAxis tick={{ fontSize: 12 }} stroke="var(--muted-foreground)" />
@@ -325,7 +327,12 @@ export default function ReportsPage() {
                   <Bar dataKey="value" radius={[3, 3, 0, 0]} fill="var(--spend)" />
                 </BarChart>
               </ResponsiveContainer>
-            </div>
+              <table className="sr-only">
+                <caption>Monthly spending trend</caption>
+                <thead><tr><th scope="col">Month</th><th scope="col">Spent</th></tr></thead>
+                <tbody>{monthlyData.map((item) => <tr key={item.month}><th scope="row">{item.month}</th><td>{formatCurrency(item.value, preferredCurrency)}</td></tr>)}</tbody>
+              </table>
+            </figure>
           </CardContent>
         </Card>
       </div>
@@ -382,9 +389,10 @@ export default function ReportsPage() {
         <CardTitle className="text-sm font-semibold">Monthly Spending Trend</CardTitle>
       </CardHeader>
       <CardContent className="px-5 pb-5">
-        <div className="h-72">
+        <figure className="h-72" aria-labelledby="monthly-spending-trend-caption">
+          <figcaption id="monthly-spending-trend-caption" className="sr-only">Monthly spending values for the selected report period.</figcaption>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={monthlyData}>
+            <BarChart data={monthlyData} aria-hidden="true">
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
               <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="var(--muted-foreground)" />
               <YAxis tick={{ fontSize: 12 }} stroke="var(--muted-foreground)" />
@@ -392,7 +400,12 @@ export default function ReportsPage() {
               <Bar dataKey="value" radius={[4, 4, 0, 0]} fill="var(--spend)" />
             </BarChart>
           </ResponsiveContainer>
-        </div>
+          <table className="sr-only">
+            <caption>Monthly spending values</caption>
+            <thead><tr><th scope="col">Month</th><th scope="col">Spent</th></tr></thead>
+            <tbody>{monthlyData.map((item) => <tr key={item.month}><th scope="row">{item.month}</th><td>{formatCurrency(item.value, preferredCurrency)}</td></tr>)}</tbody>
+          </table>
+        </figure>
         <div className="mt-3 text-sm text-muted-foreground">
           {monthlyData.length > 1 && (() => {
             const last = monthlyData[monthlyData.length - 1].value;
@@ -432,9 +445,7 @@ export default function ReportsPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-label="Loading reports" />
-        </div>
+        <LoadingState label="Loading reports" />
       ) : isError && !transactions ? (
         <ErrorState
           title="Couldn't load your reports"

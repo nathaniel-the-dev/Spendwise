@@ -30,6 +30,8 @@ export function AccountSelect({
   id,
   className,
   showBalance = true,
+  "aria-invalid": ariaInvalid,
+  "aria-describedby": ariaDescribedBy,
 }: {
   accounts: Account[] | undefined;
   value: string;
@@ -39,12 +41,14 @@ export function AccountSelect({
   id?: string;
   className?: string;
   showBalance?: boolean;
+  "aria-invalid"?: boolean;
+  "aria-describedby"?: string;
 }) {
   const list = accounts ?? [];
 
   return (
     <Select value={noneLabel ? value || "none" : value} onValueChange={onValueChange}>
-      <SelectTrigger id={id} className={className}>
+      <SelectTrigger id={id} className={className} aria-invalid={ariaInvalid} aria-describedby={ariaDescribedBy}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>

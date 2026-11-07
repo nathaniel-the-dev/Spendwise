@@ -44,6 +44,7 @@ import {
   type TransferFormValues,
 } from "@/components/shared/transfer-form-dialog";
 import { ErrorState } from "@/components/shared/error-state";
+import { LoadingState } from "@/components/shared/loading-state";
 import { CategoryIcon } from "@/components/category-icon";
 import { ACCOUNT_TYPE_LABELS, netWorth, type AccountType } from "@/lib/accounts";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -148,12 +149,7 @@ export default function AccountsPage() {
       </div>
 
       {isLoading || (!accounts && !isError) ? (
-        <div className="flex justify-center py-12">
-          <Loader2
-            className="h-6 w-6 animate-spin text-muted-foreground"
-            aria-label="Loading accounts"
-          />
-        </div>
+        <LoadingState label="Loading accounts" />
       ) : isError && !accounts ? (
         <ErrorState
           title="Couldn't load your accounts"

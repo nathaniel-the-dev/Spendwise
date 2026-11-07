@@ -27,6 +27,7 @@ import {
   type SubscriptionFormValues,
 } from "@/components/shared/subscription-form-dialog";
 import { ErrorState } from "@/components/shared/error-state";
+import { LoadingState } from "@/components/shared/loading-state";
 import { formatCurrency, formatDate, normalizeBillingAmount, txValue } from "@/lib/utils";
 import { isForeignCurrency } from "@/lib/fx";
 
@@ -123,9 +124,7 @@ export default function SubscriptionsPage() {
       </div>
 
       {isLoading || (!subscriptions && !isError) ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-label="Loading subscriptions" />
-        </div>
+        <LoadingState label="Loading subscriptions" />
       ) : isError && !subscriptions ? (
         <ErrorState
           title="Couldn't load your subscriptions"
@@ -174,7 +173,7 @@ export default function SubscriptionsPage() {
                     </div>
                     <div className="flex gap-0.5">
                       <Button
-                        variant="ghost" size="icon" className="h-8 w-8 rounded-lg"
+                        variant="ghost" size="icon" className="rounded-lg"
                         aria-label={sub.status === "active" ? `Pause ${sub.name}` : `Resume ${sub.name}`}
                         title={sub.status === "active" ? "Pause" : "Resume"}
                         onClick={() => toggleStatus(sub)}
@@ -185,13 +184,13 @@ export default function SubscriptionsPage() {
                           : sub.status === "active" ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                       </Button>
                       <Button
-                        variant="ghost" size="icon" className="h-8 w-8 rounded-lg" aria-label={`Edit ${sub.name} subscription`}
+                        variant="ghost" size="icon" className="rounded-lg" aria-label={`Edit ${sub.name} subscription`}
                         onClick={() => { setEditing(sub); setDialogOpen(true); }}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <Button
-                        variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-destructive" aria-label={`Delete ${sub.name} subscription`}
+                        variant="ghost" size="icon" className="rounded-lg text-destructive" aria-label={`Delete ${sub.name} subscription`}
                         onClick={() => setDeleting(sub)}
                       >
                         <Trash2 className="h-4 w-4" />

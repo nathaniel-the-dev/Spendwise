@@ -56,9 +56,10 @@ export function SpendingChart({
         <span className="text-xs text-muted-foreground">Last 6 months</span>
       </div>
       {hasData ? (
-        <div className="h-48 w-full">
+        <figure className="h-48 w-full" aria-labelledby="spending-chart-caption">
+          <figcaption id="spending-chart-caption" className="sr-only">Expenses for each of the last six months.</figcaption>
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
+            <AreaChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -16 }} aria-hidden="true">
               <defs>
                 <linearGradient id="spendFill" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="var(--spend)" stopOpacity={0.28} />
@@ -99,7 +100,12 @@ export function SpendingChart({
               />
             </AreaChart>
           </ResponsiveContainer>
-        </div>
+          <table className="sr-only">
+            <caption>Spending for the last six months</caption>
+            <thead><tr><th scope="col">Month</th><th scope="col">Spent</th></tr></thead>
+            <tbody>{data.map((item) => <tr key={item.label}><th scope="row">{item.label}</th><td>{formatCurrency(item.total, currency)}</td></tr>)}</tbody>
+          </table>
+        </figure>
       ) : (
         <p className="py-10 text-center text-sm text-muted-foreground">
           Add a few expenses and your spending trend will appear here.

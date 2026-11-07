@@ -29,7 +29,7 @@ export async function ArticlePage({
   return (
     <div className="flex flex-col min-h-screen">
       <SiteHeader session={session} />
-      <main className="flex-1">
+      <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none">
         <div className="relative overflow-hidden border-b bg-gradient-to-b from-muted/50 via-background to-background">
           <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
             <DotGrid className="h-full w-full text-primary/60 opacity-50" />

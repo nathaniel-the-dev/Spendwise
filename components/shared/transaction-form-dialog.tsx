@@ -164,9 +164,9 @@ export function TransactionFormDialog({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="amount">Amount</Label>
-              <Input id="amount" type="number" step="0.01" min="0" placeholder="0.00" autoFocus {...form.register("amount")} />
+              <Input id="amount" type="number" step="0.01" min="0" placeholder="0.00" autoFocus aria-invalid={!!form.formState.errors.amount} aria-describedby={form.formState.errors.amount ? "transaction-amount-error" : undefined} {...form.register("amount")} />
               {form.formState.errors.amount && (
-                <p className="text-sm text-destructive">{form.formState.errors.amount.message}</p>
+                <p id="transaction-amount-error" className="text-sm text-destructive">{form.formState.errors.amount.message}</p>
               )}
             </div>
             <div className="space-y-2">
@@ -198,9 +198,11 @@ export function TransactionFormDialog({
               value={form.watch("description")}
               onChange={(v) => form.setValue("description", v, { shouldDirty: true, shouldValidate: true })}
               suggestions={descriptionSuggestions}
+              aria-invalid={!!form.formState.errors.description}
+              aria-describedby={form.formState.errors.description ? "transaction-description-error" : undefined}
             />
             {form.formState.errors.description && (
-              <p className="text-sm text-destructive">{form.formState.errors.description.message}</p>
+              <p id="transaction-description-error" className="text-sm text-destructive">{form.formState.errors.description.message}</p>
             )}
           </div>
 
@@ -222,9 +224,9 @@ export function TransactionFormDialog({
             </div>
             <div className="space-y-2">
               <Label htmlFor="date">Date</Label>
-              <Input id="date" type="date" {...form.register("date")} />
+              <Input id="date" type="date" aria-invalid={!!form.formState.errors.date} aria-describedby={form.formState.errors.date ? "transaction-date-error" : undefined} {...form.register("date")} />
               {form.formState.errors.date && (
-                <p className="text-sm text-destructive">{form.formState.errors.date.message}</p>
+                <p id="transaction-date-error" className="text-sm text-destructive">{form.formState.errors.date.message}</p>
               )}
             </div>
           </div>

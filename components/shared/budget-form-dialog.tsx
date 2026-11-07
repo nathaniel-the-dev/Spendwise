@@ -98,18 +98,20 @@ export function BudgetFormDialog({
               value={form.watch("categoryId")}
               onValueChange={(v) => form.setValue("categoryId", v)}
               placeholder="Select category"
+              aria-invalid={!!form.formState.errors.categoryId}
+              aria-describedby={form.formState.errors.categoryId ? "budget-category-error" : undefined}
             />
             {form.formState.errors.categoryId && (
-              <p className="text-sm text-destructive">{form.formState.errors.categoryId.message}</p>
+              <p id="budget-category-error" className="text-sm text-destructive">{form.formState.errors.categoryId.message}</p>
             )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="amount">Budget Amount</Label>
-              <Input id="amount" type="number" step="0.01" min="0" placeholder="0.00" {...form.register("amount")} />
+              <Input id="amount" type="number" step="0.01" min="0" placeholder="0.00" aria-invalid={!!form.formState.errors.amount} aria-describedby={form.formState.errors.amount ? "budget-amount-error" : undefined} {...form.register("amount")} />
               {form.formState.errors.amount && (
-                <p className="text-sm text-destructive">{form.formState.errors.amount.message}</p>
+                <p id="budget-amount-error" className="text-sm text-destructive">{form.formState.errors.amount.message}</p>
               )}
             </div>
             <div className="space-y-2">
@@ -133,16 +135,16 @@ export function BudgetFormDialog({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="startDate">Start Date</Label>
-              <Input id="startDate" type="date" {...form.register("startDate")} />
+              <Input id="startDate" type="date" aria-invalid={!!form.formState.errors.startDate} aria-describedby={form.formState.errors.startDate ? "budget-start-error" : undefined} {...form.register("startDate")} />
               {form.formState.errors.startDate && (
-                <p className="text-sm text-destructive">{form.formState.errors.startDate.message}</p>
+                <p id="budget-start-error" className="text-sm text-destructive">{form.formState.errors.startDate.message}</p>
               )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="endDate">End Date (optional)</Label>
-              <Input id="endDate" type="date" {...form.register("endDate")} />
+              <Input id="endDate" type="date" aria-invalid={!!form.formState.errors.endDate} aria-describedby={form.formState.errors.endDate ? "budget-end-error" : undefined} {...form.register("endDate")} />
               {form.formState.errors.endDate && (
-                <p className="text-sm text-destructive">{form.formState.errors.endDate.message}</p>
+                <p id="budget-end-error" className="text-sm text-destructive">{form.formState.errors.endDate.message}</p>
               )}
             </div>
           </div>

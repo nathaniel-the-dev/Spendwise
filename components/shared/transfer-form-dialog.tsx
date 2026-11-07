@@ -106,9 +106,11 @@ export function TransferFormDialog({
               value={form.watch("fromAccountId")}
               onValueChange={(v) => form.setValue("fromAccountId", v, { shouldValidate: true })}
               placeholder="Source account"
+              aria-invalid={!!form.formState.errors.fromAccountId}
+              aria-describedby={form.formState.errors.fromAccountId ? "transfer-from-error" : undefined}
             />
             {form.formState.errors.fromAccountId && (
-              <p className="text-sm text-destructive">{form.formState.errors.fromAccountId.message}</p>
+              <p id="transfer-from-error" className="text-sm text-destructive">{form.formState.errors.fromAccountId.message}</p>
             )}
           </div>
 
@@ -124,9 +126,11 @@ export function TransferFormDialog({
               value={form.watch("toAccountId")}
               onValueChange={(v) => form.setValue("toAccountId", v, { shouldValidate: true })}
               placeholder="Destination account"
+              aria-invalid={!!form.formState.errors.toAccountId}
+              aria-describedby={form.formState.errors.toAccountId ? "transfer-to-error" : undefined}
             />
             {form.formState.errors.toAccountId && (
-              <p className="text-sm text-destructive">{form.formState.errors.toAccountId.message}</p>
+              <p id="transfer-to-error" className="text-sm text-destructive">{form.formState.errors.toAccountId.message}</p>
             )}
           </div>
 
@@ -139,17 +143,19 @@ export function TransferFormDialog({
                 step="0.01"
                 min="0"
                 placeholder="0.00"
+                aria-invalid={!!form.formState.errors.amount}
+                aria-describedby={form.formState.errors.amount ? "transfer-amount-error" : undefined}
                 {...form.register("amount")}
               />
               {form.formState.errors.amount && (
-                <p className="text-sm text-destructive">{form.formState.errors.amount.message}</p>
+                <p id="transfer-amount-error" className="text-sm text-destructive">{form.formState.errors.amount.message}</p>
               )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="transfer-date">Date</Label>
-              <Input id="transfer-date" type="date" {...form.register("date")} />
+              <Input id="transfer-date" type="date" aria-invalid={!!form.formState.errors.date} aria-describedby={form.formState.errors.date ? "transfer-date-error" : undefined} {...form.register("date")} />
               {form.formState.errors.date && (
-                <p className="text-sm text-destructive">{form.formState.errors.date.message}</p>
+                <p id="transfer-date-error" className="text-sm text-destructive">{form.formState.errors.date.message}</p>
               )}
             </div>
           </div>

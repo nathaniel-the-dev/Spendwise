@@ -22,7 +22,6 @@ import {
   parseAvatarUrl,
   randomSeed,
 } from "@/lib/avatar";
-import { cn } from "@/lib/utils";
 
 type AvatarPickerProps = {
   open: boolean;
@@ -97,65 +96,44 @@ export function AvatarPicker({
           </div>
         </div>
 
-        <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Style</Label>
-          <div className="grid grid-cols-6 gap-2 sm:grid-cols-11">
+        <fieldset className="space-y-1.5">
+            <legend className="text-xs text-muted-foreground">Style</legend>
+            <div className="grid grid-cols-6 gap-2 sm:grid-cols-11">
             {AVATAR_STYLES.map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setStyle(s)}
-                aria-label={s.replace(/-/g, " ")}
-                aria-pressed={style === s}
-                title={s.replace(/-/g, " ")}
-                className={cn(
-                  "flex flex-col items-center gap-1 rounded-lg border p-1.5 transition-colors",
-                  style === s
-                    ? "border-primary bg-primary/5"
-                    : "border-transparent hover:bg-muted"
-                )}
-              >
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={avatarUrl(s, seed)} alt="" />
-                  <AvatarFallback className="text-[9px] capitalize">
-                    {s.replace(/-/g, " ").slice(0, 2)}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="w-full truncate text-center text-[9px] capitalize leading-none text-muted-foreground">
-                  {s.replace(/-/g, " ")}
+              <label key={s} className="cursor-pointer" title={s.replace(/-/g, " ")}>
+                <input type="radio" name="avatar-style" value={s} checked={style === s} onChange={() => setStyle(s)} className="peer sr-only" />
+                <span className="flex min-h-12 flex-col items-center gap-1 rounded-lg border border-transparent p-1.5 transition-colors hover:bg-muted peer-checked:border-primary peer-checked:bg-primary/5 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ring">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={avatarUrl(s, seed)} alt="" />
+                    <AvatarFallback className="text-[9px] capitalize">{s.replace(/-/g, " ").slice(0, 2)}</AvatarFallback>
+                  </Avatar>
+                  <span className="w-full truncate text-center text-[9px] capitalize leading-none text-muted-foreground">{s.replace(/-/g, " ")}</span>
                 </span>
-              </button>
+              </label>
             ))}
-          </div>
-        </div>
+            </div>
+        </fieldset>
 
-        <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Characters</Label>
-          <div className="flex flex-wrap gap-2">
+        <fieldset className="space-y-1.5">
+            <legend className="text-xs text-muted-foreground">Characters</legend>
+            <div className="flex flex-wrap gap-2">
             {SAMPLE_SEEDS.map((sample) => {
               const isActive = sample === seed;
               return (
-                <button
-                  key={sample}
-                  type="button"
-                  onClick={() => setSeed(sample)}
-                  aria-label={`Character ${sample}`}
-                  aria-pressed={isActive}
-                  title={sample}
-                  className={cn(
-                    "rounded-full transition-all",
-                    isActive ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : "hover:scale-105"
-                  )}
-                >
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={avatarUrl(style, sample)} alt="" />
-                    <AvatarFallback className="text-xs">{sample.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                </button>
+                <label key={sample} className="cursor-pointer" title={sample}>
+                  <input type="radio" name="avatar-character" value={sample} checked={isActive} onChange={() => setSeed(sample)} className="peer sr-only" />
+                  <span className="block rounded-full transition-all hover:scale-105 peer-checked:ring-2 peer-checked:ring-primary peer-checked:ring-offset-2 peer-checked:ring-offset-background peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ring">
+                    <Avatar className="h-11 w-11">
+                      <AvatarImage src={avatarUrl(style, sample)} alt="" />
+                      <AvatarFallback className="text-xs">{sample.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <span className="sr-only">Character {sample}</span>
+                  </span>
+                </label>
               );
             })}
-          </div>
-        </div>
+            </div>
+        </fieldset>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>

@@ -17,6 +17,12 @@ export function SiteHeader({ session }: { session: { user: { id: string } } | nu
   const pathname = usePathname();
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md">
+      <a
+        href="#main-content"
+        className="fixed left-3 top-3 z-[100] -translate-y-20 rounded-lg bg-background px-4 py-2 text-sm font-medium shadow-dialog transition-transform focus:translate-y-0"
+      >
+        Skip to content
+      </a>
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-4 px-4">
         <Logo />
         <nav aria-label="Pages" className="hidden md:flex items-center gap-1">
@@ -41,17 +47,17 @@ export function SiteHeader({ session }: { session: { user: { id: string } } | nu
         </nav>
         <nav aria-label="Account" className="flex items-center gap-2">
           {session ? (
-            <Link href="/dashboard">
-              <Button size="sm" className="gap-1.5">Dashboard <ArrowRight className="h-3.5 w-3.5" /></Button>
-            </Link>
+            <Button asChild size="sm" className="gap-1.5">
+              <Link href="/dashboard">Dashboard <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" /></Link>
+            </Button>
           ) : (
             <>
-              <Link href="/login" className="hidden sm:block">
-                <Button variant="ghost" size="sm">Sign In</Button>
-              </Link>
-              <Link href="/register">
-                <Button size="sm">Get Started</Button>
-              </Link>
+              <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
+                <Link href="/login">Sign In</Link>
+              </Button>
+              <Button asChild size="sm">
+                <Link href="/register">Get Started</Link>
+              </Button>
             </>
           )}
         </nav>

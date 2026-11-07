@@ -20,6 +20,7 @@ import {
   type CategoryFormValues,
 } from "@/components/shared/category-form-dialog";
 import { ErrorState } from "@/components/shared/error-state";
+import { LoadingState } from "@/components/shared/loading-state";
 import {
   Dialog,
   DialogContent,
@@ -109,9 +110,7 @@ export default function CategoriesPage() {
       </div>
 
       {isLoading || (!categories && !isError) ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-label="Loading categories" />
-        </div>
+        <LoadingState label="Loading categories" />
       ) : isError && !categories ? (
         <ErrorState
           title="Couldn't load your categories"
@@ -269,13 +268,13 @@ function CategorySection({
                     </div>
                     <div className="flex gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 transition-opacity">
                       <Button
-                        variant="ghost" size="icon" className="h-7 w-7" aria-label={`Edit ${cat.name} category`}
+                        variant="ghost" size="icon" aria-label={`Edit ${cat.name} category`}
                         onClick={() => onEdit(cat)}
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
                       <Button
-                        variant="ghost" size="icon" className="h-7 w-7 text-destructive" aria-label={`Delete ${cat.name} category`}
+                        variant="ghost" size="icon" className="text-destructive" aria-label={`Delete ${cat.name} category`}
                         onClick={() => onDelete(cat)}
                       >
                         <Trash2 className="h-3.5 w-3.5" />

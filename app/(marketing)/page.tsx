@@ -113,7 +113,7 @@ export default async function MarketingPage() {
     <div className="flex flex-col min-h-screen">
       <SiteHeader session={session} />
 
-      <main className="flex-1">
+      <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none">
         {/* ── Hero: the open ledger ───────────────────────────
             Two columns on ruled paper. The headline is the entry,
             the receipt is the proof — the product's answer printed
@@ -150,23 +150,23 @@ export default async function MarketingPage() {
                 </p>
                 <div data-reveal className="flex flex-col sm:flex-row gap-3">
                   {session ? (
-                    <Link href="/dashboard">
-                      <Button size="lg" className="gap-1.5 text-sm font-medium shadow-sm">
+                    <Button asChild size="lg" className="gap-1.5 text-sm font-medium shadow-sm">
+                      <Link href="/dashboard">
                         Go to Dashboard <ArrowRight className="h-4 w-4" />
-                      </Button>
-                    </Link>
+                      </Link>
+                    </Button>
                   ) : (
                     <>
-                      <Link href="/register">
-                        <Button size="lg" className="gap-1.5 text-sm font-medium shadow-sm">
+                      <Button asChild size="lg" className="gap-1.5 text-sm font-medium shadow-sm">
+                        <Link href="/register">
                           Start Free <ArrowRight className="h-4 w-4" />
-                        </Button>
-                      </Link>
-                      <Link href="/login">
-                        <Button size="lg" variant="outline" className="text-sm font-medium">
+                        </Link>
+                      </Button>
+                      <Button asChild size="lg" variant="outline" className="text-sm font-medium">
+                        <Link href="/login">
                           Sign In
-                        </Button>
-                      </Link>
+                        </Link>
+                      </Button>
                     </>
                   )}
                 </div>
@@ -335,17 +335,17 @@ export default async function MarketingPage() {
                   product&apos;s only input — and nobody else&apos;s output.
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  <Link href="/privacy">
-                    <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+                  <Button asChild variant="outline" size="sm" className="gap-1.5 text-xs">
+                    <Link href="/privacy">
                       <FileText className="h-3.5 w-3.5" aria-hidden="true" />
                       Read the Privacy Policy
-                    </Button>
-                  </Link>
-                  <Link href="/faq">
-                    <Button variant="ghost" size="sm" className="text-xs">
+                    </Link>
+                  </Button>
+                  <Button asChild variant="ghost" size="sm" className="text-xs">
+                    <Link href="/faq">
                       More questions →
-                    </Button>
-                  </Link>
+                    </Link>
+                  </Button>
                 </div>
               </Reveal>
               <RevealGroup className="rounded-xl border bg-card divide-y">
@@ -430,16 +430,16 @@ export default async function MarketingPage() {
                 Start with a clear view of your spending and build better habits one decision at a time.
               </p>
               <div data-reveal className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link href={session ? "/dashboard" : "/register"}>
-                <Button size="lg" className="gap-1.5 text-sm font-medium bg-band-foreground text-band hover:bg-band-foreground/90 active:scale-[0.98] shadow-sm">
+              <Button asChild size="lg" className="gap-1.5 text-sm font-medium bg-band-foreground text-band hover:bg-band-foreground/90 active:scale-[0.98] shadow-sm">
+                <Link href={session ? "/dashboard" : "/register"}>
                   {session ? "Open Dashboard" : "Get Started Free"} <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-              <Link href="/support">
-                <Button size="lg" variant="outline" className="text-sm font-medium border-band-foreground/40 bg-transparent text-band-foreground hover:bg-band-foreground/10 hover:text-band-foreground">
+                </Link>
+              </Button>
+              <Button asChild size="lg" variant="outline" className="text-sm font-medium border-band-foreground/40 bg-transparent text-band-foreground hover:bg-band-foreground/10 hover:text-band-foreground">
+                <Link href="/support">
                   Talk to support
-                </Button>
-              </Link>
+                </Link>
+              </Button>
               </div>
             </RevealGroup>
           </div>

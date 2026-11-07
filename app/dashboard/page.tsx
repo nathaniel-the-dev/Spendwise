@@ -290,12 +290,12 @@ export default function DashboardPage() {
             <p className="text-sm text-muted-foreground mb-5 max-w-sm">
               Your financial journey starts here. Track expenses, set budgets, and watch your savings grow.
             </p>
-            <Link href="/dashboard/transactions">
-              <Button size="sm" className="gap-1.5 text-sm">
+            <Button asChild size="sm" className="gap-1.5 text-sm">
+              <Link href="/dashboard/transactions">
                 <Plus className="h-4 w-4" />
                 Add Your First Transaction
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </CardContent>
         </Card>
       ) : (
@@ -465,9 +465,9 @@ export default function DashboardPage() {
                   ) : (
                     <div className="text-center py-5 text-sm text-muted-foreground">
                       <p>No budgets set yet.</p>
-                      <Link href="/dashboard/budgets">
-                        <Button variant="link" size="sm" className="mt-0.5 text-xs">Create one →</Button>
-                      </Link>
+                      <Button asChild variant="link" size="sm" className="mt-0.5 text-xs">
+                        <Link href="/dashboard/budgets">Create one →</Link>
+                      </Button>
                     </div>
                   )}
                 </CardContent>
@@ -505,9 +505,9 @@ export default function DashboardPage() {
                   ) : (
                     <div className="text-center py-5 text-sm text-muted-foreground">
                       <p>No upcoming renewals.</p>
-                      <Link href="/dashboard/subscriptions">
-                        <Button variant="link" size="sm" className="mt-0.5 text-xs">Manage subscriptions →</Button>
-                      </Link>
+                      <Button asChild variant="link" size="sm" className="mt-0.5 text-xs">
+                        <Link href="/dashboard/subscriptions">Manage subscriptions →</Link>
+                      </Button>
                     </div>
                   )}
                 </CardContent>

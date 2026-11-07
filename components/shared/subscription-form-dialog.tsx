@@ -152,9 +152,9 @@ export function SubscriptionFormDialog({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
-              <Input id="name" placeholder="e.g. Netflix" {...form.register("name")} />
+              <Input id="name" placeholder="e.g. Netflix" aria-invalid={!!form.formState.errors.name} aria-describedby={form.formState.errors.name ? "subscription-name-error" : undefined} {...form.register("name")} />
               {form.formState.errors.name && (
-                <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
+                <p id="subscription-name-error" className="text-sm text-destructive">{form.formState.errors.name.message}</p>
               )}
             </div>
             <div className="space-y-2">
@@ -166,9 +166,9 @@ export function SubscriptionFormDialog({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="amount">Amount</Label>
-              <Input id="amount" type="number" step="0.01" min="0" placeholder="0.00" {...form.register("amount")} />
+              <Input id="amount" type="number" step="0.01" min="0" placeholder="0.00" aria-invalid={!!form.formState.errors.amount} aria-describedby={form.formState.errors.amount ? "subscription-amount-error" : undefined} {...form.register("amount")} />
               {form.formState.errors.amount && (
-                <p className="text-sm text-destructive">{form.formState.errors.amount.message}</p>
+                <p id="subscription-amount-error" className="text-sm text-destructive">{form.formState.errors.amount.message}</p>
               )}
             </div>
             <div className="space-y-2">
@@ -234,16 +234,16 @@ export function SubscriptionFormDialog({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="startDate">Start Date</Label>
-              <Input id="startDate" type="date" {...form.register("startDate")} />
+              <Input id="startDate" type="date" aria-invalid={!!form.formState.errors.startDate} aria-describedby={form.formState.errors.startDate ? "subscription-start-error" : undefined} {...form.register("startDate")} />
               {form.formState.errors.startDate && (
-                <p className="text-sm text-destructive">{form.formState.errors.startDate.message}</p>
+                <p id="subscription-start-error" className="text-sm text-destructive">{form.formState.errors.startDate.message}</p>
               )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="nextBillingDate">Next Billing Date</Label>
-              <Input id="nextBillingDate" type="date" {...form.register("nextBillingDate")} />
+              <Input id="nextBillingDate" type="date" aria-invalid={!!form.formState.errors.nextBillingDate} aria-describedby={form.formState.errors.nextBillingDate ? "subscription-next-error" : undefined} {...form.register("nextBillingDate")} />
               {form.formState.errors.nextBillingDate && (
-                <p className="text-sm text-destructive">{form.formState.errors.nextBillingDate.message}</p>
+                <p id="subscription-next-error" className="text-sm text-destructive">{form.formState.errors.nextBillingDate.message}</p>
               )}
             </div>
           </div>
@@ -278,9 +278,9 @@ export function SubscriptionFormDialog({
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="endDate">End Date (optional)</Label>
-                  <Input id="endDate" type="date" {...form.register("endDate")} />
+                  <Input id="endDate" type="date" aria-invalid={!!form.formState.errors.endDate} aria-describedby={form.formState.errors.endDate ? "subscription-end-error" : undefined} {...form.register("endDate")} />
                   {form.formState.errors.endDate && (
-                    <p className="text-sm text-destructive">{form.formState.errors.endDate.message}</p>
+                    <p id="subscription-end-error" className="text-sm text-destructive">{form.formState.errors.endDate.message}</p>
                   )}
                 </div>
               </div>

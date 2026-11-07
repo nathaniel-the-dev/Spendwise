@@ -44,6 +44,7 @@ import { useSettings } from "@/hooks/use-settings";
 import { useOutbox } from "@/hooks/use-outbox";
 import { useUser } from "@/components/supabase-provider";
 import { ErrorState } from "@/components/shared/error-state";
+import { LoadingState } from "@/components/shared/loading-state";
 import { PendingTransactions } from "@/components/shared/pending-transactions";
 import {
   TransactionFormDialog,
@@ -65,9 +66,7 @@ export default function TransactionsPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-label="Loading transactions" />
-        </div>
+        <LoadingState label="Loading transactions" />
       }
     >
       <TransactionsContent />
@@ -438,9 +437,7 @@ function TransactionsContent() {
 
         <CardContent className="p-0">
           {isLoading || (!data && !isError && !(page === 1 && outboxItems.length > 0)) ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-label="Loading transactions" />
-            </div>
+            <LoadingState label="Loading transactions" />
           ) : isError && !data && !(page === 1 && outboxItems.length > 0) ? (
             <ErrorState
               title="Couldn't load your transactions"
@@ -626,7 +623,7 @@ function TransactionsContent() {
                   </Select>
                   <nav aria-label="Pagination" className="flex items-center gap-1">
                     <Button
-                      variant="outline" size="icon" className="h-8 w-8"
+                      variant="outline" size="icon"
                       aria-label="Previous page"
                       disabled={page <= 1}
                       onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -641,7 +638,7 @@ function TransactionsContent() {
                           key={n}
                           variant={n === page ? "default" : "ghost"}
                           size="icon"
-                          className="h-8 w-8 text-xs tabular-nums"
+                          className="text-xs tabular-nums"
                           aria-label={`Page ${n}`}
                           aria-current={n === page ? "page" : undefined}
                           onClick={() => setPage(n)}
@@ -651,7 +648,7 @@ function TransactionsContent() {
                       )
                     )}
                     <Button
-                      variant="outline" size="icon" className="h-8 w-8"
+                      variant="outline" size="icon"
                       aria-label="Next page"
                       disabled={page >= totalPages}
                       onClick={() => setPage((p) => Math.min(totalPages, p + 1))}

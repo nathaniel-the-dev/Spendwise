@@ -91,11 +91,11 @@ export default function SupportPage() {
               </span>
               <h2 className="text-sm font-semibold mb-1.5">{c.title}</h2>
               <p className="text-sm text-muted-foreground leading-relaxed flex-1">{c.body}</p>
-              <Link href={c.action.href} className="mt-4">
-                <Button variant="outline" size="sm" className="w-full text-xs">
+              <Button asChild variant="outline" size="sm" className="mt-4 w-full text-xs">
+                <Link href={c.action.href}>
                   {c.action.label}
+                </Link>
               </Button>
-            </Link>
           </div>
         ))}
       </div>
